@@ -11,10 +11,20 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class GalleryViewModel @Inject constructor(private val repo: AIRepository) : ViewModel() {
+class GalleryViewModel @Inject constructor(
+    private val repo: AIRepository
+) : ViewModel() {
+
     private val _items = MutableStateFlow<List<Message>>(emptyList())
     val items = _items.asStateFlow()
+
     init { load() }
-    fun load() = viewModelScope.launch { _items.value = repo.getAllGenerated() }
-    fun delete(id: String) = viewModelScope.launch { repo.deleteMessage(id); load() }
+
+    fun load() {
+        viewModelScope.launch { _items.value = repo.getAllGenerated() }
+    }
+
+    fun delete(id: String) {
+        viewModelScope.launch { repo.deleteMessage(id); load() }
+    }
 }

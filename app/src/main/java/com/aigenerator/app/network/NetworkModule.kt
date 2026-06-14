@@ -16,40 +16,67 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    @Provides @Singleton
-    fun provideOkHttpClient(): OkHttpClient =
-        OkHttpClient.Builder()
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.BODY })
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        val logging = HttpLoggingInterceptor()
+        logging.level = HttpLoggingInterceptor.Level.BASIC
+        return OkHttpClient.Builder()
+            .addInterceptor(logging)
             .connectTimeout(60, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
             .writeTimeout(120, TimeUnit.SECONDS)
             .build()
+    }
 
-    @Provides @Singleton @Named("openai")
-    fun openAIRetrofit(c: OkHttpClient): Retrofit = Retrofit.Builder()
-        .baseUrl("https://api.openai.com/v1/")
-        .client(c).addConverterFactory(GsonConverterFactory.create()).build()
+    @Provides
+    @Singleton
+    @Named("openai")
+    fun provideOpenAIRetrofit(client: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.openai.com/v1/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
-    @Provides @Singleton @Named("stability")
-    fun stabilityRetrofit(c: OkHttpClient): Retrofit = Retrofit.Builder()
-        .baseUrl("https://api.stability.ai/v1/")
-        .client(c).addConverterFactory(GsonConverterFactory.create()).build()
+    @Provides
+    @Singleton
+    @Named("stability")
+    fun provideStabilityRetrofit(client: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.stability.ai/v1/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
-    @Provides @Singleton @Named("replicate")
-    fun replicateRetrofit(c: OkHttpClient): Retrofit = Retrofit.Builder()
-        .baseUrl("https://api.replicate.com/v1/")
-        .client(c).addConverterFactory(GsonConverterFactory.create()).build()
+    @Provides
+    @Singleton
+    @Named("replicate")
+    fun provideReplicateRetrofit(client: OkHttpClient): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://api.replicate.com/v1/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
 
-    @Provides @Singleton
-    fun openAIService(@Named("openai") r: Retrofit): OpenAIApiService =
-        r.create(OpenAIApiService::class.java)
+    @Provides
+    @Singleton
+    fun provideOpenAIService(@Named("openai") retrofit: Retrofit): OpenAIApiService {
+        return retrofit.create(OpenAIApiService::class.java)
+    }
 
-    @Provides @Singleton
-    fun stabilityService(@Named("stability") r: Retrofit): StabilityApiService =
-        r.create(StabilityApiService::class.java)
+    @Provides
+    @Singleton
+    fun provideStabilityService(@Named("stability") retrofit: Retrofit): StabilityApiService {
+        return retrofit.create(StabilityApiService::class.java)
+    }
 
-    @Provides @Singleton
-    fun replicateService(@Named("replicate") r: Retrofit): ReplicateApiService =
-        r.create(ReplicateApiService::class.java)
+    @Provides
+    @Singleton
+    fun provideReplicateService(@Named("replicate") retrofit: Retrofit): ReplicateApiService {
+        return retrofit.create(ReplicateApiService::class.java)
+    }
 }

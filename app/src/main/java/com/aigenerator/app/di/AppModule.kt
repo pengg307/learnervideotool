@@ -15,11 +15,19 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
-    @Provides @Singleton
-    fun provideDatabase(@ApplicationContext ctx: Context): AppDatabase =
-        Room.databaseBuilder(ctx, AppDatabase::class.java, "ai_generator_db")
-            .fallbackToDestructiveMigration().build()
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase {
+        return Room.databaseBuilder(
+            context,
+            AppDatabase::class.java,
+            "ai_generator_db"
+        ).fallbackToDestructiveMigration().build()
+    }
 
-    @Provides @Singleton
-    fun provideMessageDao(db: AppDatabase): MessageDao = db.messageDao()
+    @Provides
+    @Singleton
+    fun provideMessageDao(database: AppDatabase): MessageDao {
+        return database.messageDao()
+    }
 }

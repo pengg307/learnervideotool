@@ -1,11 +1,13 @@
 package com.aigenerator.app.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val Dark = darkColorScheme(
+private val DarkColors = darkColorScheme(
     primary          = Color(0xFF9C89FF),
     onPrimary        = Color.White,
     primaryContainer = Color(0xFF2D1B69),
@@ -19,7 +21,8 @@ private val Dark = darkColorScheme(
     errorContainer   = Color(0xFF4D1F1F),
     onErrorContainer = Color(0xFFFFB3B3)
 )
-private val Light = lightColorScheme(
+
+private val LightColors = lightColorScheme(
     primary          = Color(0xFF6750A4),
     onPrimary        = Color.White,
     primaryContainer = Color(0xFFEADDFF),
@@ -32,7 +35,12 @@ private val Light = lightColorScheme(
 )
 
 @Composable
-fun AIGeneratorTheme(dark: Boolean = isSystemInDarkTheme(),
-                     content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (dark) Dark else Light, content = content)
+fun AIGeneratorTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
+    MaterialTheme(
+        colorScheme = if (darkTheme) DarkColors else LightColors,
+        content = content
+    )
 }

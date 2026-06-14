@@ -1,21 +1,36 @@
 package com.aigenerator.app.database
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Database
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.RoomDatabase
+import androidx.room.TypeConverter
+import androidx.room.TypeConverters
 import com.aigenerator.app.model.GenerationMode
 import com.aigenerator.app.model.Message
 import com.aigenerator.app.model.MessageType
 import kotlinx.coroutines.flow.Flow
 
 class Converters {
-    @TypeConverter fun fromMsgType(v: MessageType): String = v.name
-    @TypeConverter fun toMsgType(v: String): MessageType = MessageType.valueOf(v)
-    @TypeConverter fun fromGenMode(v: GenerationMode?): String? = v?.name
-    @TypeConverter fun toGenMode(v: String?): GenerationMode? =
-        v?.let { GenerationMode.valueOf(it) }
+    @TypeConverter
+    fun fromMessageType(value: MessageType): String = value.name
+
+    @TypeConverter
+    fun toMessageType(value: String): MessageType = MessageType.valueOf(value)
+
+    @TypeConverter
+    fun fromGenerationMode(value: GenerationMode?): String? = value?.name
+
+    @TypeConverter
+    fun toGenerationMode(value: String?): GenerationMode? =
+        value?.let { GenerationMode.valueOf(it) }
 }
 
 @Dao
 interface MessageDao {
+
     @Query("SELECT * FROM messages WHERE sessionId = :sid ORDER BY timestamp ASC")
     suspend fun getBySession(sid: String): List<Message>
 

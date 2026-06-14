@@ -3,12 +3,21 @@ package com.aigenerator.app.viewmodel
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aigenerator.app.model.*
+import com.aigenerator.app.model.AIProvider
+import com.aigenerator.app.model.AppSettings
+import com.aigenerator.app.model.ChatMessage
+import com.aigenerator.app.model.GenerationMode
+import com.aigenerator.app.model.Message
+import com.aigenerator.app.model.MessageType
 import com.aigenerator.app.repository.AIRepository
 import com.aigenerator.app.repository.AIResult
 import com.aigenerator.app.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 import javax.inject.Inject
@@ -37,71 +46,112 @@ class ChatViewModel @Inject constructor(
             content = "You are an AI creative assistant for image and video generation. " +
                 "When a user wants an IMAGE respond ONLY with: [IMAGE]: <detailed visual prompt>. " +
                 "When a user wants a VIDEO respond ONLY with: [VIDEO]: <detailed visual prompt>. " +
-                "Otherwise have a short helpful conversation. " +
-                "Make prompts highly descriptive for best results."
+                "Otherwise have a short helpful conversation to understand their needs."
         )
     )
 
-    fun setMode(mode: GenerationMode) = _state.update { it.copy(currentMode = mode) }
+    fun setMode(mode: GenerationMode) {
+        _state.update { it.copy(currentMode = mode) }
+    }
 
     fun setUploadedImage(bitmap: Bitmap, uri: String) {
         _state.update { it.copy(uploadedBitmap = bitmap, uploadedImageUri = uri) }
-        addMsg(Message(content = "Image uploaded ✓", type = MessageType.USER_IMAGE,
-            localMediaPath = uri, sessionId = _state.value.sessionId))
+        addMessage(
+            Message(
+                content = "Image uploaded successfully",
+                type = MessageType.USER_IMAGE,
+                localMediaPath = uri,
+                sessionId = _state.value.sessionId
+            )
+        )
     }
 
-    fun removeUploadedImage() =
+    fun removeUploadedImage() {
         _state.update { it.copy(uploadedBitmap = null, uploadedImageUri = null) }
+    }
 
     fun sendMessage(text: String, isVoice: Boolean = false) {
         if (text.isBlank() || _state.value.isGenerating) return
-        addMsg(Message(content = text,
-            type = if (isVoice) MessageType.USER_VOICE else MessageType.USER_TEXT,
-            sessionId = _state.value.sessionId))
+
+        addMessage(
+            Message(
+                content = text,
+                type = if (isVoice) MessageType.USER_VOICE else MessageType.USER_TEXT,
+                sessionId = _state.value.sessionId
+            )
+        )
         _state.update { it.copy(isGenerating = true) }
 
         viewModelScope.launch {
-            val thinkId = UUID.randomUUID().toString()
-            addMsg(Message(id = thinkId, content = "Thinking...",
-                type = MessageType.LOADING, isLoading = true,
-                sessionId = _state.value.sessionId))
+            val thinkingId = UUID.randomUUID().toString()
+            addMessage(
+                Message(
+                    id = thinkingId,
+                    content = "Thinking...",
+                    type = MessageType.LOADING,
+                    isLoading = true,
+                    sessionId = _state.value.sessionId
+                )
+            )
+
             try {
                 val settings = settingsRepo.getSettings()
-                chatHistory.add(ChatMessage("user", text))
-                when (val r = repo.chatWithGPT(chatHistory)) {
+                chatHistory.add(ChatMessage(role = "user", content = text))
+
+                when (val chatResult = repo.chatWithGPT(chatHistory)) {
                     is AIResult.Success -> {
-                        val reply = r.data
-                        chatHistory.add(ChatMessage("assistant", reply))
-                        removeMsg(thinkId)
+                        val reply = chatResult.data
+                        chatHistory.add(ChatMessage(role = "assistant", content = reply))
+                        removeMessage(thinkingId)
+
                         when {
                             reply.startsWith("[IMAGE]:") -> {
                                 val prompt = reply.removePrefix("[IMAGE]:").trim()
-                                addMsg(Message(content = "Generating image: "$prompt"",
-                                    type = MessageType.AI_TEXT,
-                                    sessionId = _state.value.sessionId))
+                                addMessage(
+                                    Message(
+                                        content = "Generating image for: $prompt",
+                                        type = MessageType.AI_TEXT,
+                                        sessionId = _state.value.sessionId
+                                    )
+                                )
                                 generateImage(prompt, settings)
                             }
                             reply.startsWith("[VIDEO]:") -> {
                                 val prompt = reply.removePrefix("[VIDEO]:").trim()
-                                addMsg(Message(content = "Generating video: "$prompt"",
-                                    type = MessageType.AI_TEXT,
-                                    sessionId = _state.value.sessionId))
+                                addMessage(
+                                    Message(
+                                        content = "Generating video for: $prompt",
+                                        type = MessageType.AI_TEXT,
+                                        sessionId = _state.value.sessionId
+                                    )
+                                )
                                 generateVideo(prompt, settings)
                             }
-                            else -> addMsg(Message(content = reply,
-                                type = MessageType.AI_TEXT,
-                                sessionId = _state.value.sessionId))
+                            else -> {
+                                addMessage(
+                                    Message(
+                                        content = reply,
+                                        type = MessageType.AI_TEXT,
+                                        sessionId = _state.value.sessionId
+                                    )
+                                )
+                            }
                         }
                     }
                     is AIResult.Error -> {
-                        removeMsg(thinkId)
+                        removeMessage(thinkingId)
                         directGenerate(text, settings)
                     }
-                    else -> removeMsg(thinkId)
+                    else -> removeMessage(thinkingId)
                 }
             } catch (e: Exception) {
-                addMsg(Message(content = "Error: ${e.message}",
-                    type = MessageType.ERROR, sessionId = _state.value.sessionId))
+                addMessage(
+                    Message(
+                        content = "Error: ${e.message}",
+                        type = MessageType.ERROR,
+                        sessionId = _state.value.sessionId
+                    )
+                )
             } finally {
                 _state.update { it.copy(isGenerating = false) }
             }
@@ -109,37 +159,66 @@ class ChatViewModel @Inject constructor(
     }
 
     private suspend fun generateImage(prompt: String, settings: AppSettings) {
-        val loadId = UUID.randomUUID().toString()
-        addMsg(Message(id = loadId, content = "Creating your image...",
-            type = MessageType.LOADING, isLoading = true, sessionId = _state.value.sessionId))
+        val loadingId = UUID.randomUUID().toString()
+        addMessage(
+            Message(
+                id = loadingId,
+                content = "Creating your image...",
+                type = MessageType.LOADING,
+                isLoading = true,
+                sessionId = _state.value.sessionId
+            )
+        )
+
         val result = when (settings.selectedProvider) {
             AIProvider.OPENAI -> repo.generateImageOpenAI(prompt)
-            AIProvider.STABILITY_AI -> repo.generateImageStability(prompt,
-                width = settings.defaultImageWidth, height = settings.defaultImageHeight,
-                steps = settings.defaultSteps, cfgScale = settings.defaultCfgScale)
+            AIProvider.STABILITY_AI -> repo.generateImageStability(
+                prompt = prompt,
+                width = settings.defaultImageWidth,
+                height = settings.defaultImageHeight,
+                steps = settings.defaultSteps,
+                cfgScale = settings.defaultCfgScale
+            )
             AIProvider.REPLICATE -> {
-                var res: AIResult<String> = AIResult.Error("Not started")
-                repo.generateWithReplicate(prompt, settings.replicateImageVersion,
-                    mapOf("width" to settings.defaultImageWidth,
-                          "height" to settings.defaultImageHeight,
-                          "num_inference_steps" to settings.defaultSteps)
-                ).collect { res = it }
-                res
+                var finalResult: AIResult<String> = AIResult.Error("Not started")
+                repo.generateWithReplicate(
+                    prompt = prompt,
+                    modelVersion = settings.replicateImageVersion,
+                    extraParams = mapOf(
+                        "width" to settings.defaultImageWidth,
+                        "height" to settings.defaultImageHeight,
+                        "num_inference_steps" to settings.defaultSteps
+                    )
+                ).collect { finalResult = it }
+                finalResult
             }
         }
-        removeMsg(loadId)
-        handleResult(result, isVideo = false)
+
+        removeMessage(loadingId)
+        handleGenerationResult(result, isVideo = false)
     }
 
     private suspend fun generateVideo(prompt: String, settings: AppSettings) {
-        val loadId = UUID.randomUUID().toString()
-        addMsg(Message(id = loadId, content = "Creating your video (2-5 min)...",
-            type = MessageType.LOADING, isLoading = true, sessionId = _state.value.sessionId))
-        var result: AIResult<String> = AIResult.Error("Not started")
-        repo.generateWithReplicate(prompt, settings.replicateVideoVersion,
-            mapOf("num_frames" to 25, "fps" to 8)).collect { result = it }
-        removeMsg(loadId)
-        handleResult(result, isVideo = true)
+        val loadingId = UUID.randomUUID().toString()
+        addMessage(
+            Message(
+                id = loadingId,
+                content = "Creating your video, this can take 2-5 minutes...",
+                type = MessageType.LOADING,
+                isLoading = true,
+                sessionId = _state.value.sessionId
+            )
+        )
+
+        var finalResult: AIResult<String> = AIResult.Error("Not started")
+        repo.generateWithReplicate(
+            prompt = prompt,
+            modelVersion = settings.replicateVideoVersion,
+            extraParams = mapOf("num_frames" to 25, "fps" to 8)
+        ).collect { finalResult = it }
+
+        removeMessage(loadingId)
+        handleGenerationResult(finalResult, isVideo = true)
     }
 
     private suspend fun directGenerate(text: String, settings: AppSettings) {
@@ -149,33 +228,52 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun handleResult(result: AIResult<String>, isVideo: Boolean) {
+    private fun handleGenerationResult(result: AIResult<String>, isVideo: Boolean) {
         when (result) {
             is AIResult.Success -> {
-                val msg = Message(
-                    content = if (isVideo) "Here is your video!" else "Here is your image!",
+                val message = Message(
+                    content = if (isVideo) "Your video is ready!" else "Your image is ready!",
                     type = if (isVideo) MessageType.AI_VIDEO else MessageType.AI_IMAGE,
-                    mediaUrl = result.data, sessionId = _state.value.sessionId
+                    mediaUrl = result.data,
+                    sessionId = _state.value.sessionId
                 )
-                addMsg(msg)
-                viewModelScope.launch { repo.saveMessage(msg) }
+                addMessage(message)
+                viewModelScope.launch { repo.saveMessage(message) }
             }
-            is AIResult.Error -> addMsg(Message(content = "Error: ${result.message}",
-                type = MessageType.ERROR, sessionId = _state.value.sessionId))
+            is AIResult.Error -> {
+                addMessage(
+                    Message(
+                        content = "Generation failed: ${result.message}",
+                        type = MessageType.ERROR,
+                        sessionId = _state.value.sessionId
+                    )
+                )
+            }
             else -> {}
         }
     }
 
-    fun clearChat() = viewModelScope.launch {
-        repo.clearSession(_state.value.sessionId)
-        _state.value = ChatUiState(sessionId = UUID.randomUUID().toString())
-        chatHistory.clear()
-        chatHistory.add(ChatMessage("system",
-            "You are an AI creative assistant for image and video generation."))
+    fun clearChat() {
+        viewModelScope.launch {
+            repo.clearSession(_state.value.sessionId)
+            _state.value = ChatUiState(sessionId = UUID.randomUUID().toString())
+            chatHistory.clear()
+            chatHistory.add(
+                ChatMessage(
+                    "system",
+                    "You are an AI creative assistant for image and video generation."
+                )
+            )
+        }
     }
 
-    private fun addMsg(msg: Message) =
-        _state.update { it.copy(messages = it.messages + msg) }
-    private fun removeMsg(id: String) =
-        _state.update { it.copy(messages = it.messages.filter { m -> m.id != id }) }
+    private fun addMessage(message: Message) {
+        _state.update { it.copy(messages = it.messages + message) }
+    }
+
+    private fun removeMessage(id: String) {
+        _state.update { state ->
+            state.copy(messages = state.messages.filter { it.id != id })
+        }
+    }
 }

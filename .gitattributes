@@ -1,12 +1,9 @@
-# Ensure Unix line endings for shell scripts
-gradlew text eol=lf
-*.sh text eol=lf
-*.bat text eol=crlf
-*.gradle text eol=lf
-*.kt text eol=lf
-*.xml text eol=lf
-# Binary files – never touch line endings
-*.jar binary
-*.png binary
-*.jpg binary
-*.keystore binary
+gradlew        text eol=lf
+*.sh           text eol=lf
+*.bat          text eol=crlf
+*.gradle       text eol=lf
+*.kt           text eol=lf
+*.xml          text eol=lf
+*.jar          binary
+*.png          binary
+*.jpg          binary

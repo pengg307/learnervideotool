@@ -10,13 +10,18 @@ enum class MessageType {
     SYSTEM, ERROR, LOADING
 }
 
-enum class GenerationMode { IMAGE, VIDEO, IMAGE_TO_IMAGE, IMAGE_TO_VIDEO }
+enum class GenerationMode {
+    IMAGE, VIDEO, IMAGE_TO_IMAGE, IMAGE_TO_VIDEO
+}
 
-enum class AIProvider { OPENAI, STABILITY_AI, REPLICATE }
+enum class AIProvider {
+    OPENAI, STABILITY_AI, REPLICATE
+}
 
 @Entity(tableName = "messages")
 data class Message(
-    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    @PrimaryKey
+    val id: String = UUID.randomUUID().toString(),
     val content: String = "",
     val type: MessageType = MessageType.USER_TEXT,
     val mediaUrl: String? = null,
@@ -27,7 +32,6 @@ data class Message(
     val sessionId: String = ""
 )
 
-// ── Request bodies ────────────────────────────────────────────────────────────
 data class OpenAIImageRequest(
     val prompt: String,
     val model: String = "dall-e-3",
@@ -37,7 +41,10 @@ data class OpenAIImageRequest(
     val response_format: String = "url"
 )
 
-data class ChatMessage(val role: String, val content: String)
+data class ChatMessage(
+    val role: String,
+    val content: String
+)
 
 data class ChatRequest(
     val model: String = "gpt-4",
@@ -55,25 +62,54 @@ data class StabilityTextToImageBody(
     val samples: Int = 1
 )
 
-data class StabilityTextPrompt(val text: String, val weight: Float = 1.0f)
+data class StabilityTextPrompt(
+    val text: String,
+    val weight: Float = 1.0f
+)
 
-data class ReplicateRequest(val version: String, val input: Map<String, Any>)
+data class ReplicateRequest(
+    val version: String,
+    val input: Map<String, Any>
+)
 
-// ── Response bodies ───────────────────────────────────────────────────────────
-data class OpenAIImageResponse(val created: Long = 0, val data: List<ImageData> = emptyList())
-data class ImageData(val url: String? = null, val b64_json: String? = null,
-                     val revised_prompt: String? = null)
+data class OpenAIImageResponse(
+    val created: Long = 0,
+    val data: List<ImageData> = emptyList()
+)
 
-data class OpenAIChatResponse(val id: String = "", val choices: List<Choice> = emptyList())
-data class Choice(val message: ChatMessage, val finish_reason: String = "")
+data class ImageData(
+    val url: String? = null,
+    val b64_json: String? = null,
+    val revised_prompt: String? = null
+)
 
-data class StabilityImageResponse(val artifacts: List<Artifact> = emptyList())
-data class Artifact(val base64: String = "", val seed: Long = 0, val finishReason: String = "")
+data class OpenAIChatResponse(
+    val id: String = "",
+    val choices: List<Choice> = emptyList()
+)
 
-data class ReplicateResponse(val id: String = "", val status: String = "",
-                              val output: Any? = null, val error: String? = null)
+data class Choice(
+    val message: ChatMessage,
+    val finish_reason: String = ""
+)
 
-// ── Settings ──────────────────────────────────────────────────────────────────
+data class StabilityImageResponse(
+    val artifacts: List<Artifact> = emptyList()
+)
+
+data class Artifact(
+    val base64: String = "",
+    val seed: Long = 0,
+    val finishReason: String = ""
+)
+
+data class ReplicateResponse(
+    val id: String = "",
+    val status: String = "",
+    val output: Any? = null,
+    val error: String? = null
+)
+
 data class AppSettings(
     val openAiApiKey: String = "",
     val stabilityApiKey: String = "",
@@ -88,7 +124,9 @@ data class AppSettings(
     val saveToGallery: Boolean = true,
     val selectedProvider: AIProvider = AIProvider.OPENAI,
     val replicateImageVersion: String =
-        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
+        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294" +
+        "bba72df75aae2bec46e7cb50be2f5b3aecf9",
     val replicateVideoVersion: String =
-        "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438"
+        "stability-ai/stable-video-diffusion:3f0457e4619daac51203" +
+        "dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438"
 )

@@ -11,9 +11,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(private val repo: SettingsRepository) : ViewModel() {
+class SettingsViewModel @Inject constructor(
+    private val repo: SettingsRepository
+) : ViewModel() {
+
     val settings = repo.settingsFlow.stateIn(
-        viewModelScope, SharingStarted.WhileSubscribed(5000), AppSettings()
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        AppSettings()
     )
-    fun save(s: AppSettings) = viewModelScope.launch { repo.save(s) }
+
+    fun save(newSettings: AppSettings) {
+        viewModelScope.launch { repo.save(newSettings) }
+    }
 }
