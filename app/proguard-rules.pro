@@ -1,0 +1,5 @@
+# Add project specific ProGuard rules here.
+-keep class com.aigenerator.app.model.** { *; }
+-keep class com.aigenerator.app.network.** { *; }
+-keepattributes Signature
+-keepattributes *Annotation*
