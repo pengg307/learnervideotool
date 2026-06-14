@@ -32,8 +32,6 @@ class AIRepository @Inject constructor(
     private val dao: MessageDao
 ) {
 
-    // ─── OpenAI Image ────────────────────────────────────────────────────────
-
     suspend fun generateImageOpenAI(prompt: String, size: String = "1024x1024"): AIResult<String> =
         withContext(Dispatchers.IO) {
             runCatching {
@@ -52,15 +50,16 @@ class AIRepository @Inject constructor(
             }.getOrElse { AIResult.Error("Network error: ${it.message}") }
         }
 
-    // ─── OpenAI Chat ─────────────────────────────────────────────────────────
-
     suspend fun chatWithGPT(messages: List<ChatMessage>): AIResult<String> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val s = settingsRepo.getSettings()
                 if (s.openAiApiKey.isBlank())
                     return@withContext AIResult.Error("OpenAI API key not set.")
-                val resp = openAI.chat("Bearer ${s.openAiApiKey}", ChatRequest(messages = messages))
+                val resp = openAI.chat(
+                    "Bearer ${s.openAiApiKey}",
+                    ChatRequest(messages = messages)
+                )
                 if (resp.isSuccessful)
                     AIResult.Success(resp.body()?.choices?.firstOrNull()?.message?.content
                         ?: return@withContext AIResult.Error("Empty response"))
@@ -69,15 +68,10 @@ class AIRepository @Inject constructor(
             }.getOrElse { AIResult.Error("Network error: ${it.message}") }
         }
 
-    // ─── Stability AI ────────────────────────────────────────────────────────
-
     suspend fun generateImageStability(
-        prompt: String,
-        negativePrompt: String = "",
-        width: Int = 1024,
-        height: Int = 1024,
-        steps: Int = 30,
-        cfgScale: Float = 7.0f,
+        prompt: String, negativePrompt: String = "",
+        width: Int = 1024, height: Int = 1024,
+        steps: Int = 30, cfgScale: Float = 7.0f,
         engineId: String = "stable-diffusion-xl-1024-v1-0"
     ): AIResult<String> = withContext(Dispatchers.IO) {
         runCatching {
@@ -85,7 +79,8 @@ class AIRepository @Inject constructor(
             if (s.stabilityApiKey.isBlank())
                 return@withContext AIResult.Error("Stability AI key not set. Go to Settings.")
             val prompts = mutableListOf(StabilityTextPrompt(prompt, 1.0f))
-            if (negativePrompt.isNotBlank()) prompts.add(StabilityTextPrompt(negativePrompt, -1.0f))
+            if (negativePrompt.isNotBlank())
+                prompts.add(StabilityTextPrompt(negativePrompt, -1.0f))
             val resp = stability.textToImage(
                 "Bearer ${s.stabilityApiKey}", engineId = engineId,
                 request = StabilityTextToImageBody(prompts, cfgScale, width, height, steps)
@@ -99,66 +94,63 @@ class AIRepository @Inject constructor(
         }.getOrElse { AIResult.Error("Network error: ${it.message}") }
     }
 
-    // ─── Replicate ───────────────────────────────────────────────────────────
-
     fun generateWithReplicate(
         prompt: String,
         modelVersion: String,
         extraParams: Map<String, Any> = emptyMap()
     ): Flow<AIResult<String>> = flow {
         emit(AIResult.Loading())
-        runCatching {
+        try {
             val s = settingsRepo.getSettings()
             if (s.replicateApiKey.isBlank()) {
                 emit(AIResult.Error("Replicate API key not set. Go to Settings."))
-                return@runCatching
+                return@flow
             }
-            val input = mutableMapOf<String, Any>("prompt" to prompt).apply { putAll(extraParams) }
+            val input = mutableMapOf<String, Any>("prompt" to prompt)
+                .apply { putAll(extraParams) }
             val createResp = replicate.createPrediction(
                 "Token ${s.replicateApiKey}",
                 ReplicateRequest(version = modelVersion, input = input)
             )
             if (!createResp.isSuccessful) {
                 emit(AIResult.Error("Failed to start: ${createResp.errorBody()?.string()}"))
-                return@runCatching
+                return@flow
             }
             val id = createResp.body()?.id
-                ?: run { emit(AIResult.Error("No prediction ID")); return@runCatching }
+                ?: run { emit(AIResult.Error("No prediction ID")); return@flow }
 
             repeat(100) {
                 delay(3000)
-                val statusResp = replicate.getPrediction("Token ${s.replicateApiKey}", id)
-                if (statusResp.isSuccessful) {
-                    when (statusResp.body()?.status) {
+                val sr = replicate.getPrediction("Token ${s.replicateApiKey}", id)
+                if (sr.isSuccessful) {
+                    when (sr.body()?.status) {
                         "succeeded" -> {
-                            val out = statusResp.body()?.output
+                            val out = sr.body()?.output
                             val url = when (out) {
-                                is String   -> out
-                                is List<*>  -> out.firstOrNull()?.toString() ?: ""
-                                else        -> out?.toString() ?: ""
+                                is String  -> out
+                                is List<*> -> out.firstOrNull()?.toString() ?: ""
+                                else       -> out?.toString() ?: ""
                             }
                             emit(if (url.isNotBlank()) AIResult.Success(url)
                                  else AIResult.Error("Empty output"))
                             return@repeat
                         }
-                        "failed"   -> { emit(AIResult.Error(statusResp.body()?.error ?: "Failed")); return@repeat }
+                        "failed"   -> { emit(AIResult.Error(sr.body()?.error ?: "Failed")); return@repeat }
                         "canceled" -> { emit(AIResult.Error("Canceled")); return@repeat }
                     }
                 }
             }
             emit(AIResult.Error("Timed out after 5 minutes"))
-        }.onFailure { emit(AIResult.Error("Error: ${it.message}")) }
+        } catch (e: Exception) {
+            emit(AIResult.Error("Error: ${e.message}"))
+        }
     }
-
-    // ─── Database ────────────────────────────────────────────────────────────
 
     suspend fun getAllGenerated(): List<Message> = dao.getAllGenerated()
     suspend fun getMessages(sid: String): List<Message> = dao.getBySession(sid)
     suspend fun saveMessage(m: Message) = dao.insert(m)
     suspend fun deleteMessage(id: String) = dao.deleteById(id)
     suspend fun clearSession(sid: String) = dao.deleteBySession(sid)
-
-    // ─── Helpers ─────────────────────────────────────────────────────────────
 
     fun bitmapToBase64(bitmap: Bitmap): String {
         val s = ByteArrayOutputStream()

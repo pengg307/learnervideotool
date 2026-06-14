@@ -23,10 +23,11 @@ import com.aigenerator.app.viewmodel.GalleryViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GalleryScreen(paddingValues: PaddingValues, vm: GalleryViewModel = hiltViewModel()) {
-    val items by vm.items.collectAsState()
+    val items    by vm.items.collectAsState()
     var selected by remember { mutableStateOf<Message?>(null) }
 
-    Column(Modifier.fillMaxSize().padding(bottom = paddingValues.calculateBottomPadding())) {
+    Column(Modifier.fillMaxSize()
+        .padding(bottom = paddingValues.calculateBottomPadding())) {
         TopAppBar(
             title = { Text("Gallery", fontWeight = FontWeight.Bold) },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -37,7 +38,6 @@ fun GalleryScreen(paddingValues: PaddingValues, vm: GalleryViewModel = hiltViewM
                 }
             }
         )
-
         if (items.isEmpty()) {
             Box(Modifier.fillMaxSize(), Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -54,7 +54,7 @@ fun GalleryScreen(paddingValues: PaddingValues, vm: GalleryViewModel = hiltViewM
             LazyVerticalGrid(columns = GridCells.Fixed(2),
                 contentPadding = PaddingValues(12.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                verticalArrangement   = Arrangement.spacedBy(8.dp)) {
                 items(items) { item ->
                     Card(Modifier.aspectRatio(1f).clickable { selected = item },
                         shape = RoundedCornerShape(12.dp)) {

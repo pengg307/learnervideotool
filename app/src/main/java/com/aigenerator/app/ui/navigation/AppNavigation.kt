@@ -20,7 +20,6 @@ fun AppNavigation(navController: NavHostController) {
     val tabs = listOf(Screen.Chat, Screen.Gallery, Screen.Settings)
     val back by navController.currentBackStackEntryAsState()
     val cur = back?.destination?.route
-
     Scaffold(
         bottomBar = {
             NavigationBar {
@@ -31,8 +30,11 @@ fun AppNavigation(navController: NavHostController) {
                         label = { Text(s.label) },
                         onClick = {
                             navController.navigate(s.route) {
-                                popUpTo(navController.graph.startDestinationId) { saveState = true }
-                                launchSingleTop = true; restoreState = true
+                                popUpTo(navController.graph.startDestinationId) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState    = true
                             }
                         }
                     )

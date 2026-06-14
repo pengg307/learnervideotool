@@ -20,11 +20,11 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltViewModel()) {
-    val saved by vm.settings.collectAsState()
-    var s by remember(saved) { mutableStateOf(saved) }
-    var showOAI  by remember { mutableStateOf(false) }
-    var showStab by remember { mutableStateOf(false) }
-    var showRep  by remember { mutableStateOf(false) }
+    val saved     by vm.settings.collectAsState()
+    var s         by remember(saved) { mutableStateOf(saved) }
+    var showOAI   by remember { mutableStateOf(false) }
+    var showStab  by remember { mutableStateOf(false) }
+    var showRep   by remember { mutableStateOf(false) }
     var justSaved by remember { mutableStateOf(false) }
 
     Column(Modifier.fillMaxSize()
@@ -37,12 +37,12 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
 
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
 
-            // ── Provider ─────────────────────────────────────────────────────
-            SecTitle("AI Provider")
+            SectionTitle("AI Provider")
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     AIProvider.values().forEach { p ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Row(Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically) {
                             RadioButton(selected = s.selectedProvider == p,
                                 onClick = { s = s.copy(selectedProvider = p) })
                             Text(when (p) {
@@ -55,18 +55,23 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
                 }
             }
 
-            // ── API Keys ──────────────────────────────────────────────────────
-            SecTitle("API Keys")
+            SectionTitle("API Keys")
             Card(Modifier.fillMaxWidth()) {
-                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    KeyField("OpenAI Key (sk-...)",     s.openAiApiKey,     { s = s.copy(openAiApiKey    = it) }, showOAI,  { showOAI  = !showOAI  })
-                    KeyField("Stability AI Key",         s.stabilityApiKey,  { s = s.copy(stabilityApiKey = it) }, showStab, { showStab = !showStab })
-                    KeyField("Replicate Key (r8_...)",  s.replicateApiKey,  { s = s.copy(replicateApiKey = it) }, showRep,  { showRep  = !showRep  })
+                Column(Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    KeyField("OpenAI Key (sk-...)",
+                        s.openAiApiKey, { s = s.copy(openAiApiKey = it) },
+                        showOAI,  { showOAI  = !showOAI  })
+                    KeyField("Stability AI Key",
+                        s.stabilityApiKey, { s = s.copy(stabilityApiKey = it) },
+                        showStab, { showStab = !showStab })
+                    KeyField("Replicate Key (r8_...)",
+                        s.replicateApiKey, { s = s.copy(replicateApiKey = it) },
+                        showRep,  { showRep  = !showRep  })
                 }
             }
 
-            // ── Image Settings ────────────────────────────────────────────────
-            SecTitle("Image Settings")
+            SectionTitle("Image Settings")
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Text("Resolution", style = MaterialTheme.typography.titleSmall)
@@ -75,13 +80,17 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
                         listOf(512 to 512, 768 to 768, 1024 to 1024).forEach { (w, h) ->
                             FilterChip(
                                 selected = s.defaultImageWidth == w && s.defaultImageHeight == h,
-                                onClick = { s = s.copy(defaultImageWidth = w, defaultImageHeight = h) },
-                                label = { Text("${w}x${h}", style = MaterialTheme.typography.labelSmall) }
+                                onClick  = { s = s.copy(defaultImageWidth = w, defaultImageHeight = h) },
+                                label    = { Text("${w}x${h}",
+                                    style = MaterialTheme.typography.labelSmall) }
                             )
                         }
                     }
-                    Spacer(Modifier.height(8.dp)); HorizontalDivider(); Spacer(Modifier.height(8.dp))
-                    Text("Steps: ${s.defaultSteps}", style = MaterialTheme.typography.titleSmall)
+                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(Modifier.height(8.dp))
+                    Text("Steps: ${s.defaultSteps}",
+                        style = MaterialTheme.typography.titleSmall)
                     Slider(value = s.defaultSteps.toFloat(),
                         onValueChange = { s = s.copy(defaultSteps = it.toInt()) },
                         valueRange = 10f..50f, steps = 39)
@@ -90,8 +99,10 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
                     Slider(value = s.defaultCfgScale,
                         onValueChange = { s = s.copy(defaultCfgScale = it) },
                         valueRange = 1f..20f)
-                    HorizontalDivider(); Spacer(Modifier.height(4.dp))
-                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
+                    HorizontalDivider()
+                    Spacer(Modifier.height(4.dp))
+                    Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween,
+                        Alignment.CenterVertically) {
                         Text("Auto-save to Gallery")
                         Switch(checked = s.saveToGallery,
                             onCheckedChange = { s = s.copy(saveToGallery = it) })
@@ -99,11 +110,11 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
                 }
             }
 
-            // ── Replicate Model Versions ──────────────────────────────────────
             if (s.selectedProvider == AIProvider.REPLICATE) {
-                SecTitle("Replicate Model Versions")
+                SectionTitle("Replicate Model Versions")
                 Card(Modifier.fillMaxWidth()) {
-                    Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(value = s.replicateImageVersion,
                             onValueChange = { s = s.copy(replicateImageVersion = it) },
                             label = { Text("Image Model Version") },
@@ -116,7 +127,6 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
                 }
             }
 
-            // ── Save Button ───────────────────────────────────────────────────
             Button(onClick = { vm.save(s); justSaved = true },
                 modifier = Modifier.fillMaxWidth()) {
                 Icon(Icons.Default.Save, null)
@@ -129,21 +139,21 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
                 Card(Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primaryContainer)) {
-                    Row(Modifier.padding(16.dp, 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.padding(16.dp, 8.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.CheckCircle, null,
                             tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Settings saved successfully!")
+                        Text("Settings saved!")
                     }
                 }
             }
 
-            // ── About ─────────────────────────────────────────────────────────
-            SecTitle("About")
+            SectionTitle("About")
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
-                    InfoRow("Version", "1.0.0")
-                    InfoRow("Supported Models", "DALL-E 3, SDXL, SVD")
+                    InfoRow("Version",   "1.0.0")
+                    InfoRow("Models",    "DALL-E 3, SDXL, SVD")
                     InfoRow("Providers", "OpenAI, Stability AI, Replicate")
                 }
             }
@@ -151,28 +161,27 @@ fun SettingsScreen(paddingValues: PaddingValues, vm: SettingsViewModel = hiltVie
     }
 }
 
-@Composable fun SecTitle(t: String) {
+@Composable fun SectionTitle(t: String) =
     Text(t, style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-}
 
-@Composable fun KeyField(label: String, value: String, onChange: (String) -> Unit,
-                          visible: Boolean, onToggle: () -> Unit) {
-    OutlinedTextField(value = value, onValueChange = onChange,
-        label = { Text(label) }, modifier = Modifier.fillMaxWidth(), singleLine = true,
-        visualTransformation = if (visible) VisualTransformation.None
-                               else PasswordVisualTransformation(),
-        trailingIcon = {
-            IconButton(onClick = onToggle) {
-                Icon(if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility, null)
-            }
-        })
-}
+@Composable fun KeyField(
+    label: String, value: String, onChange: (String) -> Unit,
+    visible: Boolean, onToggle: () -> Unit
+) = OutlinedTextField(value = value, onValueChange = onChange,
+    label = { Text(label) }, modifier = Modifier.fillMaxWidth(), singleLine = true,
+    visualTransformation = if (visible) VisualTransformation.None
+                           else PasswordVisualTransformation(),
+    trailingIcon = {
+        IconButton(onClick = onToggle) {
+            Icon(if (visible) Icons.Default.VisibilityOff
+                 else Icons.Default.Visibility, null)
+        }
+    })
 
-@Composable fun InfoRow(label: String, value: String) {
+@Composable fun InfoRow(label: String, value: String) =
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), Arrangement.SpaceBetween) {
         Text(label, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
         Text(value, style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
-}

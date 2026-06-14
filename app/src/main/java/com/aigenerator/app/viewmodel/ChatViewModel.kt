@@ -34,11 +34,11 @@ class ChatViewModel @Inject constructor(
     private val chatHistory = mutableListOf(
         ChatMessage(
             role = "system",
-            content = """You are an AI creative assistant for image and video generation.
-When a user wants an IMAGE, respond ONLY with: [IMAGE]: <detailed visual prompt>
-When a user wants a VIDEO, respond ONLY with: [VIDEO]: <detailed visual prompt>
-Otherwise have a short helpful conversation.
-Make prompts highly descriptive for best results."""
+            content = "You are an AI creative assistant for image and video generation. " +
+                "When a user wants an IMAGE respond ONLY with: [IMAGE]: <detailed visual prompt>. " +
+                "When a user wants a VIDEO respond ONLY with: [VIDEO]: <detailed visual prompt>. " +
+                "Otherwise have a short helpful conversation. " +
+                "Make prompts highly descriptive for best results."
         )
     )
 
@@ -46,11 +46,12 @@ Make prompts highly descriptive for best results."""
 
     fun setUploadedImage(bitmap: Bitmap, uri: String) {
         _state.update { it.copy(uploadedBitmap = bitmap, uploadedImageUri = uri) }
-        addMsg(Message(content = "Image uploaded ?", type = MessageType.USER_IMAGE,
+        addMsg(Message(content = "Image uploaded ✓", type = MessageType.USER_IMAGE,
             localMediaPath = uri, sessionId = _state.value.sessionId))
     }
 
-    fun removeUploadedImage() = _state.update { it.copy(uploadedBitmap = null, uploadedImageUri = null) }
+    fun removeUploadedImage() =
+        _state.update { it.copy(uploadedBitmap = null, uploadedImageUri = null) }
 
     fun sendMessage(text: String, isVoice: Boolean = false) {
         if (text.isBlank() || _state.value.isGenerating) return
@@ -58,6 +59,7 @@ Make prompts highly descriptive for best results."""
             type = if (isVoice) MessageType.USER_VOICE else MessageType.USER_TEXT,
             sessionId = _state.value.sessionId))
         _state.update { it.copy(isGenerating = true) }
+
         viewModelScope.launch {
             val thinkId = UUID.randomUUID().toString()
             addMsg(Message(id = thinkId, content = "Thinking...",
@@ -74,14 +76,14 @@ Make prompts highly descriptive for best results."""
                         when {
                             reply.startsWith("[IMAGE]:") -> {
                                 val prompt = reply.removePrefix("[IMAGE]:").trim()
-                                addMsg(Message(content = "?? Generating: "$prompt"",
+                                addMsg(Message(content = "Generating image: "$prompt"",
                                     type = MessageType.AI_TEXT,
                                     sessionId = _state.value.sessionId))
                                 generateImage(prompt, settings)
                             }
                             reply.startsWith("[VIDEO]:") -> {
                                 val prompt = reply.removePrefix("[VIDEO]:").trim()
-                                addMsg(Message(content = "?? Generating video: "$prompt"",
+                                addMsg(Message(content = "Generating video: "$prompt"",
                                     type = MessageType.AI_TEXT,
                                     sessionId = _state.value.sessionId))
                                 generateVideo(prompt, settings)
@@ -91,11 +93,14 @@ Make prompts highly descriptive for best results."""
                                 sessionId = _state.value.sessionId))
                         }
                     }
-                    is AIResult.Error -> { removeMsg(thinkId); directGenerate(text, settings) }
+                    is AIResult.Error -> {
+                        removeMsg(thinkId)
+                        directGenerate(text, settings)
+                    }
                     else -> removeMsg(thinkId)
                 }
             } catch (e: Exception) {
-                addMsg(Message(content = "? ${e.message}",
+                addMsg(Message(content = "Error: ${e.message}",
                     type = MessageType.ERROR, sessionId = _state.value.sessionId))
             } finally {
                 _state.update { it.copy(isGenerating = false) }
@@ -132,8 +137,7 @@ Make prompts highly descriptive for best results."""
             type = MessageType.LOADING, isLoading = true, sessionId = _state.value.sessionId))
         var result: AIResult<String> = AIResult.Error("Not started")
         repo.generateWithReplicate(prompt, settings.replicateVideoVersion,
-            mapOf("num_frames" to 25, "fps" to 8)
-        ).collect { result = it }
+            mapOf("num_frames" to 25, "fps" to 8)).collect { result = it }
         removeMsg(loadId)
         handleResult(result, isVideo = true)
     }
@@ -149,14 +153,14 @@ Make prompts highly descriptive for best results."""
         when (result) {
             is AIResult.Success -> {
                 val msg = Message(
-                    content = if (isVideo) "Here's your video! ??" else "Here's your image! ??",
+                    content = if (isVideo) "Here is your video!" else "Here is your image!",
                     type = if (isVideo) MessageType.AI_VIDEO else MessageType.AI_IMAGE,
                     mediaUrl = result.data, sessionId = _state.value.sessionId
                 )
                 addMsg(msg)
                 viewModelScope.launch { repo.saveMessage(msg) }
             }
-            is AIResult.Error -> addMsg(Message(content = "? ${result.message}",
+            is AIResult.Error -> addMsg(Message(content = "Error: ${result.message}",
                 type = MessageType.ERROR, sessionId = _state.value.sessionId))
             else -> {}
         }
@@ -170,7 +174,8 @@ Make prompts highly descriptive for best results."""
             "You are an AI creative assistant for image and video generation."))
     }
 
-    private fun addMsg(msg: Message) = _state.update { it.copy(messages = it.messages + msg) }
+    private fun addMsg(msg: Message) =
+        _state.update { it.copy(messages = it.messages + msg) }
     private fun removeMsg(id: String) =
         _state.update { it.copy(messages = it.messages.filter { m -> m.id != id }) }
 }

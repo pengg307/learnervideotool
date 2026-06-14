@@ -19,7 +19,6 @@ private val Dark = darkColorScheme(
     errorContainer   = Color(0xFF4D1F1F),
     onErrorContainer = Color(0xFFFFB3B3)
 )
-
 private val Light = lightColorScheme(
     primary          = Color(0xFF6750A4),
     onPrimary        = Color.White,
@@ -33,6 +32,7 @@ private val Light = lightColorScheme(
 )
 
 @Composable
-fun AIGeneratorTheme(dark: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+fun AIGeneratorTheme(dark: Boolean = isSystemInDarkTheme(),
+                     content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = if (dark) Dark else Light, content = content)
 }

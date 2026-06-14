@@ -4,28 +4,19 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.UUID
 
-// ─── Enums ───────────────────────────────────────────────────────────────────
-
 enum class MessageType {
     USER_TEXT, USER_VOICE, USER_IMAGE,
     AI_TEXT, AI_IMAGE, AI_VIDEO,
     SYSTEM, ERROR, LOADING
 }
 
-enum class GenerationMode {
-    IMAGE, VIDEO, IMAGE_TO_IMAGE, IMAGE_TO_VIDEO
-}
+enum class GenerationMode { IMAGE, VIDEO, IMAGE_TO_IMAGE, IMAGE_TO_VIDEO }
 
-enum class AIProvider {
-    OPENAI, STABILITY_AI, REPLICATE
-}
-
-// ─── Room Entity ─────────────────────────────────────────────────────────────
+enum class AIProvider { OPENAI, STABILITY_AI, REPLICATE }
 
 @Entity(tableName = "messages")
 data class Message(
-    @PrimaryKey
-    val id: String = UUID.randomUUID().toString(),
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val content: String = "",
     val type: MessageType = MessageType.USER_TEXT,
     val mediaUrl: String? = null,
@@ -36,8 +27,7 @@ data class Message(
     val sessionId: String = ""
 )
 
-// ─── API Request Models ───────────────────────────────────────────────────────
-
+// ── Request bodies ────────────────────────────────────────────────────────────
 data class OpenAIImageRequest(
     val prompt: String,
     val model: String = "dall-e-3",
@@ -47,10 +37,7 @@ data class OpenAIImageRequest(
     val response_format: String = "url"
 )
 
-data class ChatMessage(
-    val role: String,
-    val content: String
-)
+data class ChatMessage(val role: String, val content: String)
 
 data class ChatRequest(
     val model: String = "gpt-4",
@@ -68,58 +55,25 @@ data class StabilityTextToImageBody(
     val samples: Int = 1
 )
 
-data class StabilityTextPrompt(
-    val text: String,
-    val weight: Float = 1.0f
-)
+data class StabilityTextPrompt(val text: String, val weight: Float = 1.0f)
 
-data class ReplicateRequest(
-    val version: String,
-    val input: Map<String, Any>
-)
+data class ReplicateRequest(val version: String, val input: Map<String, Any>)
 
-// ─── API Response Models ──────────────────────────────────────────────────────
+// ── Response bodies ───────────────────────────────────────────────────────────
+data class OpenAIImageResponse(val created: Long = 0, val data: List<ImageData> = emptyList())
+data class ImageData(val url: String? = null, val b64_json: String? = null,
+                     val revised_prompt: String? = null)
 
-data class OpenAIImageResponse(
-    val created: Long = 0,
-    val data: List<ImageData> = emptyList()
-)
+data class OpenAIChatResponse(val id: String = "", val choices: List<Choice> = emptyList())
+data class Choice(val message: ChatMessage, val finish_reason: String = "")
 
-data class ImageData(
-    val url: String? = null,
-    val b64_json: String? = null,
-    val revised_prompt: String? = null
-)
+data class StabilityImageResponse(val artifacts: List<Artifact> = emptyList())
+data class Artifact(val base64: String = "", val seed: Long = 0, val finishReason: String = "")
 
-data class OpenAIChatResponse(
-    val id: String = "",
-    val choices: List<Choice> = emptyList()
-)
+data class ReplicateResponse(val id: String = "", val status: String = "",
+                              val output: Any? = null, val error: String? = null)
 
-data class Choice(
-    val message: ChatMessage,
-    val finish_reason: String = ""
-)
-
-data class StabilityImageResponse(
-    val artifacts: List<Artifact> = emptyList()
-)
-
-data class Artifact(
-    val base64: String = "",
-    val seed: Long = 0,
-    val finishReason: String = ""
-)
-
-data class ReplicateResponse(
-    val id: String = "",
-    val status: String = "",
-    val output: Any? = null,
-    val error: String? = null
-)
-
-// ─── App Settings ─────────────────────────────────────────────────────────────
-
+// ── Settings ──────────────────────────────────────────────────────────────────
 data class AppSettings(
     val openAiApiKey: String = "",
     val stabilityApiKey: String = "",
