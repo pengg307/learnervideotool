@@ -192,6 +192,27 @@ class ChatViewModel @Inject constructor(
                 ).collect { finalResult = it }
                 finalResult
             }
+            AIProvider.CUSTOM -> {
+                // Custom endpoint image generation
+                if (settings.customEndpointUrl.isBlank() || settings.customApiKey.isBlank()) {
+                    AIResult.Error("Please configure Custom Endpoint URL and API Key in Settings")
+                } else {
+                    try {
+                        repo.generateImageCustom(
+                            prompt = prompt,
+                            endpointUrl = settings.customEndpointUrl,
+                            apiKey = settings.customApiKey,
+                            modelName = settings.customModelName,
+                            width = settings.defaultImageWidth,
+                            height = settings.defaultImageHeight,
+                            steps = settings.defaultSteps,
+                            cfgScale = settings.defaultCfgScale
+                        )
+                    } catch (e: Exception) {
+                        AIResult.Error("Custom endpoint error: ${e.message}")
+                    }
+                }
+            }
         }
 
         removeMessage(loadingId)
@@ -211,11 +232,21 @@ class ChatViewModel @Inject constructor(
         )
 
         var finalResult: AIResult<String> = AIResult.Error("Not started")
-        repo.generateWithReplicate(
-            prompt = prompt,
-            modelVersion = settings.replicateVideoVersion,
-            extraParams = mapOf("num_frames" to 25, "fps" to 8)
-        ).collect { finalResult = it }
+        
+        when (settings.selectedProvider) {
+            AIProvider.OPENAI, AIProvider.STABILITY_AI, AIProvider.CUSTOM -> {
+                // For video generation, fall back to Replicate or show error
+                // Most custom endpoints don't support video yet
+                finalResult = AIResult.Error("Video generation via custom endpoint not supported. Please use Replicate.")
+            }
+            AIProvider.REPLICATE -> {
+                repo.generateWithReplicate(
+                    prompt = prompt,
+                    modelVersion = settings.replicateVideoVersion,
+                    extraParams = mapOf("num_frames" to 25, "fps" to 8)
+                ).collect { finalResult = it }
+            }
+        }
 
         removeMessage(loadingId)
         handleGenerationResult(finalResult, isVideo = true)

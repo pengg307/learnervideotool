@@ -22,6 +22,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -207,6 +212,91 @@ class AIRepository @Inject constructor(
             emit(AIResult.Error("Error: ${e.message}"))
         }
     }
+
+    // ==================== NEW CUSTOM ENDPOINT FUNCTION ====================
+    
+    suspend fun generateImageCustom(
+        prompt: String,
+        endpointUrl: String,
+        apiKey: String,
+        modelName: String,
+        width: Int = 1024,
+        height: Int = 1024,
+        steps: Int = 30,
+        cfgScale: Float = 7.0f
+    ): AIResult<String> = withContext(Dispatchers.IO) {
+        try {
+            // Validate inputs
+            if (endpointUrl.isBlank()) {
+                return@withContext AIResult.Error("Custom endpoint URL is not set. Go to Settings.")
+            }
+            if (apiKey.isBlank()) {
+                return@withContext AIResult.Error("Custom API key is not set. Go to Settings.")
+            }
+
+            // Build the request URL (assuming OpenAI-compatible endpoint)
+            val url = if (endpointUrl.endsWith("/")) {
+                "${endpointUrl}images/generations"
+            } else {
+                "$endpointUrl/images/generations"
+            }
+
+            // Create JSON request body (OpenAI-compatible format)
+            val jsonBody = JSONObject().apply {
+                put("prompt", prompt)
+                put("model", modelName.ifBlank { "default" })
+                put("n", 1)
+                put("size", "${width}x${height}")
+                put("steps", steps)
+                put("cfg_scale", cfgScale)
+            }
+
+            // Create HTTP client and request
+            val client = OkHttpClient()
+            val requestBody = jsonBody.toString()
+                .toRequestBody("application/json".toMediaType())
+            
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(requestBody)
+                .build()
+
+            // Execute request
+            val response = client.newCall(request).execute()
+            
+            val responseBody = response.body?.string()
+            
+            if (response.isSuccessful && responseBody != null) {
+                // Parse response to get image URL (OpenAI-compatible format)
+                val jsonResponse = JSONObject(responseBody)
+                val imageUrl = jsonResponse
+                    .optJSONArray("data")
+                    ?.optJSONObject(0)
+                    ?.optString("url", "")
+                    ?: ""
+                
+                if (imageUrl.isNotBlank()) {
+                    AIResult.Success(imageUrl)
+                } else {
+                    // Try alternative response formats
+                    val fallbackUrl = jsonResponse.optString("output", "")
+                    if (fallbackUrl.isNotBlank()) {
+                        AIResult.Success(fallbackUrl)
+                    } else {
+                        AIResult.Error("No image URL in response: $responseBody")
+                    }
+                }
+            } else {
+                AIResult.Error("Custom endpoint error: ${response.code} - ${responseBody ?: "Unknown error"}")
+            }
+        } catch (e: Exception) {
+            AIResult.Error("Custom endpoint network error: ${e.message}")
+        }
+    }
+
+    // ==================== END CUSTOM ENDPOINT FUNCTION ====================
 
     suspend fun getAllGenerated(): List<Message> = dao.getAllGenerated()
     suspend fun getMessages(sessionId: String): List<Message> = dao.getBySession(sessionId)
