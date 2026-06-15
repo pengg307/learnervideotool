@@ -388,7 +388,7 @@ fun WelcomeCard(mode: GenerationMode) {
                     color    = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                 ) {
                     Text(
-                        text     = ""$example"",
+                        text     = example,
                         modifier = Modifier.padding(10.dp, 6.dp),
                         style    = MaterialTheme.typography.bodySmall
                     )
