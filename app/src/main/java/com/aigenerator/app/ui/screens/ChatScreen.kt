@@ -4,8 +4,10 @@ import android.Manifest
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -473,6 +475,7 @@ fun ChatBubble(message: Message) {
 
             MessageType.AI_IMAGE ->
                 Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
+                    val ctx = LocalContext.current
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(message.content, modifier = Modifier.padding(bottom = 4.dp),
                             style = MaterialTheme.typography.labelSmall)
@@ -487,13 +490,57 @@ fun ChatBubble(message: Message) {
                                 contentScale       = ContentScale.FillWidth
                             )
                         }
-                        Row(modifier = Modifier.padding(top = 4.dp)) {
-                            TextButton(onClick = { }) {
+                        Row(modifier = Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                            // Save: download image via WebView
+                            var saveLoading by remember { mutableStateOf(false) }
+                            TextButton(onClick = {
+                                if (saveLoading) return@TextButton
+                                saveLoading = true
+                                val webView = android.webkit.WebView(ctx)
+                                webView.webClient = object : android.webkit.WebViewClient() {
+                                    override fun onPageFinished(wv: android.webkit.WebView?, u: String?) {
+                                        val js = """javascript:(function(){
+                                            var img=document.querySelector('img');
+                                            if(!img)return;
+                                            var c=document.createElement('canvas');
+                                            c.width=img.naturalWidth||800;c.height=img.naturalHeight||800;
+                                            c.getContext('2d').drawImage(img,0,0);
+                                            c.toBlob(function(b){
+                                                var u=URL.createObjectURL(b);
+                                                var a=document.createElement('a');
+                                                a.href=u;a.download='ai_image_${System.currentTimeMillis()}.png';
+                                                a.click();URL.revokeObjectURL(u);
+                                            },'image/png');
+                                        })()"""
+                                        webView.evaluateJavascript(js, null)
+                                        webView.destroy()
+                                        saveLoading = false
+                                    }
+                                    override fun onReceivedError(
+                                        wv: android.webkit.WebView?,
+                                        req: android.webkit.WebResourceRequest?,
+                                        err: android.webkit.WebResourceError?
+                                    ) {
+                                        saveLoading = false
+                                        webView.destroy()
+                                        Toast.makeText(ctx, "Save failed", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                webView.loadUrl(url)
+                            }) {
                                 Icon(Icons.Default.Download, null, Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Save")
                             }
-                            TextButton(onClick = { }) {
+                            // Share: open share intent with URL
+                            TextButton(onClick = {
+                                val share = Intent(Intent.ACTION_SEND).apply {
+                                    type = "image/*"
+                                    putExtra(Intent.EXTRA_STREAM, Uri.parse(url))
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                ctx.startActivity(Intent.createChooser(share, "Share image"))
+                            }) {
                                 Icon(Icons.Default.Share, null, Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Share")
@@ -504,14 +551,19 @@ fun ChatBubble(message: Message) {
 
             MessageType.AI_VIDEO ->
                 Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
+                    val ctx = LocalContext.current
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(message.content, style = MaterialTheme.typography.labelSmall)
                         Spacer(modifier = Modifier.height(4.dp))
-                        message.mediaUrl?.let {
+                        message.mediaUrl?.let { url ->
                             Text("Video ready!",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary)
-                            TextButton(onClick = { }) {
+                            TextButton(onClick = {
+                                // TODO: Play video - Media3 ExoPlayer
+                                Toast.makeText(ctx, "Video playback coming soon",
+                                    Toast.LENGTH_SHORT).show()
+                            }) {
                                 Icon(Icons.Default.PlayCircle, null, Modifier.size(20.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text("Play Video")
