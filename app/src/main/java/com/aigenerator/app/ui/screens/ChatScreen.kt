@@ -492,13 +492,14 @@ fun ChatBubble(message: Message) {
                             )
                         }
                         Row(modifier = Modifier.padding(top = 4.dp)) {
-                            // Save button - fixed without WebView
+                            // Save button - fixed with proper coroutine scope
                             var saveLoading by remember { mutableStateOf(false) }
+                            val scope = rememberCoroutineScope()
+                            
                             TextButton(
                                 onClick = {
                                     if (saveLoading) return@TextButton
                                     saveLoading = true
-                                    val scope = rememberCoroutineScope()
                                     scope.launch {
                                         try {
                                             message.mediaUrl?.let { imageUrl ->
