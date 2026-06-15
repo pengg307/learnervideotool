@@ -61,6 +61,7 @@ fun SettingsScreen(
     var showOAI       by remember { mutableStateOf(false) }
     var showStab      by remember { mutableStateOf(false) }
     var showRep       by remember { mutableStateOf(false) }
+    var showCustom    by remember { mutableStateOf(false) }
     var justSaved     by remember { mutableStateOf(false) }
 
     Column(
@@ -95,12 +96,56 @@ fun SettingsScreen(
                             )
                             Text(
                                 text = when (provider) {
-                                    AIProvider.OPENAI       -> "OpenAI  (DALL-E 3 + GPT-4)"
-                                    AIProvider.STABILITY_AI -> "Stability AI  (SDXL)"
-                                    AIProvider.REPLICATE    -> "Replicate  (Open models)"
+                                    AIProvider.OPENAI       -> "OpenAI (DALL-E 3 + GPT-4)"
+                                    AIProvider.STABILITY_AI -> "Stability AI (SDXL)"
+                                    AIProvider.REPLICATE    -> "Replicate (Open models)"
+                                    AIProvider.CUSTOM       -> "Custom Endpoint"
                                 }
                             )
                         }
+                    }
+                }
+            }
+
+            // Custom Endpoint Settings (shown only when Custom provider is selected)
+            if (s.selectedProvider == AIProvider.CUSTOM) {
+                SectionTitle("Custom Endpoint Settings")
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier            = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        OutlinedTextField(
+                            value         = s.customEndpointUrl,
+                            onValueChange = { s = s.copy(customEndpointUrl = it) },
+                            label         = { Text("Endpoint URL") },
+                            placeholder   = { Text("https://api.example.com/v1") },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true
+                        )
+                        
+                        ApiKeyField(
+                            label = "Custom API Key",
+                            value = s.customApiKey,
+                            onValueChange = { s = s.copy(customApiKey = it) },
+                            visible = showCustom,
+                            onToggleVisibility = { showCustom = !showCustom }
+                        )
+                        
+                        OutlinedTextField(
+                            value         = s.customModelName,
+                            onValueChange = { s = s.copy(customModelName = it) },
+                            label         = { Text("Model Name") },
+                            placeholder   = { Text("e.g., gpt-4, llama-2, sd-xl") },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true
+                        )
+                        
+                        Text(
+                            text = "Note: Custom endpoint must be compatible with OpenAI API format",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
@@ -226,7 +271,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow("Version",   "1.0.0")
                     InfoRow("Models",    "DALL-E 3, SDXL, SVD")
-                    InfoRow("Providers", "OpenAI, Stability AI, Replicate")
+                    InfoRow("Providers", "OpenAI, Stability AI, Replicate, Custom")
                 }
             }
         }

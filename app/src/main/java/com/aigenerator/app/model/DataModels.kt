@@ -15,7 +15,7 @@ enum class GenerationMode {
 }
 
 enum class AIProvider {
-    OPENAI, STABILITY_AI, REPLICATE
+    OPENAI, STABILITY_AI, REPLICATE, CUSTOM  // Added CUSTOM here
 }
 
 @Entity(tableName = "messages")
@@ -128,5 +128,10 @@ data class AppSettings(
         "bba72df75aae2bec46e7cb50be2f5b3aecf9",
     val replicateVideoVersion: String =
         "stability-ai/stable-video-diffusion:3f0457e4619daac51203" +
-        "dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438"
+        "dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
+    
+    // === NEW CUSTOM ENDPOINT FIELDS ===
+    val customEndpointUrl: String = "",      // Custom API endpoint URL
+    val customApiKey: String = "",           // API key for custom endpoint
+    val customModelName: String = ""         // Model name for custom endpoint
 )
