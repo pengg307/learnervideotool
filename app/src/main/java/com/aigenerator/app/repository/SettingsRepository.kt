@@ -40,6 +40,11 @@ class SettingsRepository @Inject constructor(
         val PROVIDER      = stringPreferencesKey("provider")
         val REP_IMG_VER   = stringPreferencesKey("rep_img_ver")
         val REP_VID_VER   = stringPreferencesKey("rep_vid_ver")
+        
+        // NEW: Custom endpoint keys
+        val CUSTOM_ENDPOINT_URL = stringPreferencesKey("custom_endpoint_url")
+        val CUSTOM_API_KEY      = stringPreferencesKey("custom_api_key")
+        val CUSTOM_MODEL_NAME   = stringPreferencesKey("custom_model_name")
     }
 
     val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -63,7 +68,12 @@ class SettingsRepository @Inject constructor(
             replicateImageVersion = prefs[Keys.REP_IMG_VER]
                 ?: "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
             replicateVideoVersion = prefs[Keys.REP_VID_VER]
-                ?: "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438"
+                ?: "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
+            
+            // NEW: Load custom endpoint settings
+            customEndpointUrl     = prefs[Keys.CUSTOM_ENDPOINT_URL] ?: "",
+            customApiKey          = prefs[Keys.CUSTOM_API_KEY] ?: "",
+            customModelName       = prefs[Keys.CUSTOM_MODEL_NAME] ?: ""
         )
     }
 
@@ -85,6 +95,11 @@ class SettingsRepository @Inject constructor(
             prefs[Keys.PROVIDER]    = settings.selectedProvider.name
             prefs[Keys.REP_IMG_VER] = settings.replicateImageVersion
             prefs[Keys.REP_VID_VER] = settings.replicateVideoVersion
+            
+            // NEW: Save custom endpoint settings
+            prefs[Keys.CUSTOM_ENDPOINT_URL] = settings.customEndpointUrl
+            prefs[Keys.CUSTOM_API_KEY]      = settings.customApiKey
+            prefs[Keys.CUSTOM_MODEL_NAME]   = settings.customModelName
         }
     }
 }
