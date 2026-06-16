@@ -89,7 +89,7 @@ class SettingsRepository @Inject constructor(
             prefs[Keys.OPENAI_KEY]    = settings.openAiApiKey
             prefs[Keys.STAB_KEY]      = settings.stabilityApiKey
             prefs[Keys.REP_KEY]       = settings.replicateApiKey
-            prefs[Keys.AGNES_KEY]     = settings.agnesApiKey
+            prefs[Keys.AGNES_KEY]     = settings.agnesApiKey.trim()
             prefs[Keys.AGNES_IMG_MODEL] = settings.agnesImageModel
             prefs[Keys.AGNES_VID_MODEL] = settings.agnesVideoModel
             prefs[Keys.IMG_MODEL]     = settings.defaultImageModel

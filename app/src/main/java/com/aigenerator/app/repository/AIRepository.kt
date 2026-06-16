@@ -274,7 +274,7 @@ class AIRepository @Inject constructor(
 
             val request = Request.Builder()
                 .url(endpoint)
-                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Authorization", "Bearer $apiKey.trim()")
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody)
                 .build()
@@ -359,7 +359,7 @@ class AIRepository @Inject constructor(
 
             val createRequest = Request.Builder()
                 .url(endpoint)
-                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Authorization", "Bearer $apiKey.trim()")
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody)
                 .build()
@@ -393,7 +393,7 @@ class AIRepository @Inject constructor(
                 
                 val statusRequest = Request.Builder()
                     .url(statusUrl)
-                    .addHeader("Authorization", "Bearer $apiKey")
+                    .addHeader("Authorization", "Bearer $apiKey.trim()")
                     .get()
                     .build()
 
