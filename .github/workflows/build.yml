@@ -61,21 +61,41 @@ jobs:
         if: success()
         run: ls -lh app/build/outputs/apk/debug/app-debug.apk
 
-      # ============ NEW: Upload to Appetize.io for browser testing ============
+      # ============ NEW: Upload to Appetize.io using curl ============
       - name: Upload APK to Appetize.io
         if: success()
-        uses: ychescale9/action-appetize@v1
-        with:
-          app-path: app/build/outputs/apk/debug/app-debug.apk
-          token: ${{ secrets.APPETIZE_TOKEN }}
-          public: true
-          # Optional: specify device (default is pixel4)
-          # device: pixel4
+        run: |
+          echo "📤 Uploading APK to Appetize.io..."
+          
+          # Upload the APK
+          RESPONSE=$(curl -s -X POST "https://api.appetize.io/v1/apps" \
+            -H "Authorization: Bearer ${{ secrets.APPETIZE_TOKEN }}" \
+            -F "file=@app/build/outputs/apk/debug/app-debug.apk" \
+            -F "platform=android")
+          
+          echo "📦 Response: $RESPONSE"
+          
+          # Extract the public URL from the response
+          PUBLIC_URL=$(echo "$RESPONSE" | grep -o '"publicUrl":"[^"]*"' | cut -d'"' -f4)
+          APP_KEY=$(echo "$RESPONSE" | grep -o '"appKey":"[^"]*"' | cut -d'"' -f4)
+          
+          if [ -n "$PUBLIC_URL" ]; then
+            echo "✅ Upload successful!"
+            echo "=================================================="
+            echo "📱 App URL: $PUBLIC_URL"
+            echo "🔑 App Key: $APP_KEY"
+            echo "=================================================="
+            # Save URL for later steps
+            echo "APPETIZE_URL=$PUBLIC_URL" >> $GITHUB_ENV
+          else
+            echo "❌ Upload failed. Response: $RESPONSE"
+            exit 1
+          fi
 
       - name: Display Appetize.io Link
         if: success()
         run: |
           echo "=================================================="
           echo "📱 Your app is ready to test in your browser!"
-          echo "🔗 Click the link above or check the previous step for the URL"
+          echo "🔗 ${{ env.APPETIZE_URL }}"
           echo "=================================================="
