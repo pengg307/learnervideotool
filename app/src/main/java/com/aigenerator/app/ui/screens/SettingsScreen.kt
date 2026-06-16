@@ -41,15 +41,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.aigenerator.app.R
+import com.aigenerator.app.BuildConfig
 import com.aigenerator.app.model.AIProvider
 import com.aigenerator.app.model.Defaults
+import com.aigenerator.app.ui.AppStrings
 import com.aigenerator.app.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
 
@@ -74,7 +74,7 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
     ) {
         TopAppBar(
-            title  = { Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold) },
+            title  = { Text(AppStrings.settingsTitle(), fontWeight = FontWeight.Bold) },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -85,8 +85,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
-            // ============ AI PROVIDER ============
-            SectionTitle(stringResource(R.string.settings_ai_provider))
+            SectionTitle(AppStrings.settingsAiProvider())
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     AIProvider.values().forEach { provider ->
@@ -100,10 +99,10 @@ fun SettingsScreen(
                             )
                             Text(
                                 text = when (provider) {
-                                    AIProvider.OPENAI       -> stringResource(R.string.provider_openai)
-                                    AIProvider.STABILITY_AI -> stringResource(R.string.provider_stability)
-                                    AIProvider.REPLICATE    -> stringResource(R.string.provider_replicate)
-                                    AIProvider.AGNES        -> stringResource(R.string.provider_agnes)
+                                    AIProvider.OPENAI       -> AppStrings.providerOpenAI()
+                                    AIProvider.STABILITY_AI -> AppStrings.providerStability()
+                                    AIProvider.REPLICATE    -> AppStrings.providerReplicate()
+                                    AIProvider.AGNES        -> AppStrings.providerAgnes()
                                 }
                             )
                         }
@@ -111,16 +110,15 @@ fun SettingsScreen(
                 }
             }
 
-            // ============ AGNES SETTINGS ============
             if (s.selectedProvider == AIProvider.AGNES) {
-                SectionTitle(stringResource(R.string.settings_agnes))
+                SectionTitle(AppStrings.settingsAgnes())
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier            = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ApiKeyField(
-                            label = stringResource(R.string.agnes_api_key),
+                            label = AppStrings.agnesApiKey(),
                             value = s.agnesApiKey,
                             onValueChange = { s = s.copy(agnesApiKey = it) },
                             visible = showAgnes,
@@ -130,7 +128,7 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value         = s.agnesImageModel,
                             onValueChange = { s = s.copy(agnesImageModel = it) },
-                            label         = { Text(stringResource(R.string.agnes_image_model)) },
+                            label         = { Text(AppStrings.agnesImageModel()) },
                             placeholder   = { Text(Defaults.AGNES_IMAGE_MODEL) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
@@ -139,22 +137,21 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value         = s.agnesVideoModel,
                             onValueChange = { s = s.copy(agnesVideoModel = it) },
-                            label         = { Text(stringResource(R.string.agnes_video_model)) },
+                            label         = { Text(AppStrings.agnesVideoModel()) },
                             placeholder   = { Text(Defaults.AGNES_VIDEO_MODEL) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
                         
                         Text(
-                            text = stringResource(R.string.agnes_note),
+                            text = AppStrings.agnesNote(),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
 
-                // ============ VIDEO PARAMETERS ============
-                SectionTitle(stringResource(R.string.settings_video))
+                SectionTitle(AppStrings.settingsVideo())
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -165,7 +162,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoWidth = it.toIntOrNull() ?: Defaults.AGNES_VIDEO_WIDTH) 
                             },
-                            label = { Text(stringResource(R.string.video_width)) },
+                            label = { Text(AppStrings.videoWidth()) },
                             placeholder = { Text(Defaults.AGNES_VIDEO_WIDTH.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
@@ -175,7 +172,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoHeight = it.toIntOrNull() ?: Defaults.AGNES_VIDEO_HEIGHT) 
                             },
-                            label = { Text(stringResource(R.string.video_height)) },
+                            label = { Text(AppStrings.videoHeight()) },
                             placeholder = { Text(Defaults.AGNES_VIDEO_HEIGHT.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
@@ -185,7 +182,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoNumFrames = it.toIntOrNull() ?: Defaults.AGNES_VIDEO_FRAMES) 
                             },
-                            label = { Text(stringResource(R.string.video_frames)) },
+                            label = { Text(AppStrings.videoFrames()) },
                             placeholder = { Text(Defaults.AGNES_VIDEO_FRAMES.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
@@ -195,7 +192,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoFrameRate = it.toIntOrNull() ?: Defaults.AGNES_VIDEO_FPS) 
                             },
-                            label = { Text(stringResource(R.string.video_fps)) },
+                            label = { Text(AppStrings.videoFps()) },
                             placeholder = { Text(Defaults.AGNES_VIDEO_FPS.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
@@ -204,30 +201,28 @@ fun SettingsScreen(
                 }
             }
 
-            // ============ API KEYS ============
-            SectionTitle(stringResource(R.string.settings_api_keys))
+            SectionTitle(AppStrings.settingsApiKeys())
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier            = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ApiKeyField(stringResource(R.string.openai_key),
+                    ApiKeyField(AppStrings.openAiKey(),
                         s.openAiApiKey,    { s = s.copy(openAiApiKey    = it) },
                         showOAI,  { showOAI  = !showOAI  })
-                    ApiKeyField(stringResource(R.string.stability_key),
+                    ApiKeyField(AppStrings.stabilityKey(),
                         s.stabilityApiKey, { s = s.copy(stabilityApiKey = it) },
                         showStab, { showStab = !showStab })
-                    ApiKeyField(stringResource(R.string.replicate_key),
+                    ApiKeyField(AppStrings.replicateKey(),
                         s.replicateApiKey, { s = s.copy(replicateApiKey = it) },
                         showRep,  { showRep  = !showRep  })
                 }
             }
 
-            // ============ IMAGE SETTINGS ============
-            SectionTitle(stringResource(R.string.settings_image))
+            SectionTitle(AppStrings.settingsImage())
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(stringResource(R.string.resolution), style = MaterialTheme.typography.titleSmall)
+                    Text(AppStrings.resolution(), style = MaterialTheme.typography.titleSmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(512 to 512, 768 to 768, 1024 to 1024).forEach { (w, h) ->
                             FilterChip(
@@ -238,7 +233,7 @@ fun SettingsScreen(
                         }
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text(stringResource(R.string.steps) + ": ${s.defaultSteps}",
+                    Text(AppStrings.steps() + ": ${s.defaultSteps}",
                         style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value         = s.defaultSteps.toFloat(),
@@ -246,7 +241,7 @@ fun SettingsScreen(
                         valueRange    = 10f..50f,
                         steps         = 39
                     )
-                    Text(stringResource(R.string.cfg_scale) + ": ${"%.1f".format(s.defaultCfgScale)}",
+                    Text(AppStrings.cfgScale() + ": ${"%.1f".format(s.defaultCfgScale)}",
                         style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value         = s.defaultCfgScale,
@@ -259,7 +254,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
-                        Text(stringResource(R.string.auto_save))
+                        Text(AppStrings.autoSave())
                         Switch(
                             checked         = s.saveToGallery,
                             onCheckedChange = { s = s.copy(saveToGallery = it) }
@@ -268,9 +263,8 @@ fun SettingsScreen(
                 }
             }
 
-            // ============ REPLICATE SETTINGS ============
             if (s.selectedProvider == AIProvider.REPLICATE) {
-                SectionTitle(stringResource(R.string.settings_replicate))
+                SectionTitle(AppStrings.settingsReplicate())
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier            = Modifier.padding(16.dp),
@@ -279,14 +273,14 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value         = s.replicateImageVersion,
                             onValueChange = { s = s.copy(replicateImageVersion = it) },
-                            label         = { Text(stringResource(R.string.replicate_image_ver)) },
+                            label         = { Text(AppStrings.replicateImageVer()) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
                         OutlinedTextField(
                             value         = s.replicateVideoVersion,
                             onValueChange = { s = s.copy(replicateVideoVersion = it) },
-                            label         = { Text(stringResource(R.string.replicate_video_ver)) },
+                            label         = { Text(AppStrings.replicateVideoVer()) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
@@ -294,14 +288,13 @@ fun SettingsScreen(
                 }
             }
 
-            // ============ SAVE BUTTON ============
             Button(
                 onClick  = { vm.save(s); justSaved = true },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.Save, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.save_settings))
+                Text(AppStrings.saveSettings())
             }
 
             if (justSaved) {
@@ -319,18 +312,17 @@ fun SettingsScreen(
                         Icon(Icons.Default.CheckCircle, null,
                             tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.settings_saved))
+                        Text(AppStrings.settingsSaved())
                     }
                 }
             }
 
-            // ============ ABOUT ============
-            SectionTitle(stringResource(R.string.settings_about))
+            SectionTitle(AppStrings.settingsAbout())
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow(stringResource(R.string.version),   "1.0.0")
-                    InfoRow(stringResource(R.string.models),    "DALL-E 3, SDXL, SVD, Agnes Image/Video")
-                    InfoRow(stringResource(R.string.providers), "OpenAI, Stability AI, Replicate, Agnes AI")
+                    InfoRow(AppStrings.version(),   "1.0.0")
+                    InfoRow(AppStrings.models(),    "DALL-E 3, SDXL, SVD, Agnes Image/Video")
+                    InfoRow(AppStrings.providers(), "OpenAI, Stability AI, Replicate, Agnes AI")
                 }
             }
         }
@@ -368,8 +360,8 @@ fun ApiKeyField(
                 Icon(
                     imageVector        = if (visible) Icons.Default.VisibilityOff
                                          else Icons.Default.Visibility,
-                    contentDescription = if (visible) stringResource(R.string.hide)
-                                         else stringResource(R.string.show)
+                    contentDescription = if (visible) AppStrings.hide()
+                                         else AppStrings.show()
                 )
             }
         }
