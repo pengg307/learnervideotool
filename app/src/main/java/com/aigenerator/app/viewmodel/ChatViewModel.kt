@@ -191,24 +191,19 @@ class ChatViewModel @Inject constructor(
                 ).collect { finalResult = it }
                 finalResult
             }
-            AIProvider.CUSTOM -> {
-                if (settings.customEndpointUrl.isBlank() || settings.customApiKey.isBlank()) {
-                    AIResult.Error("Please configure Custom Endpoint URL and API Key in Settings")
+            AIProvider.AGNES -> {
+                if (settings.agnesApiKey.isBlank()) {
+                    AIResult.Error("Agnes API key not set. Go to Settings.")
                 } else {
                     try {
-                        repo.generateImageCustom(
+                        repo.generateImageAgnes(
                             prompt = prompt,
-                            endpointUrl = settings.customEndpointUrl,
-                            apiKey = settings.customApiKey,
-                            modelName = settings.customModelName,
-                            width = settings.defaultImageWidth,
-                            height = settings.defaultImageHeight,
-                            steps = settings.defaultSteps,
-                            cfgScale = settings.defaultCfgScale,
-                            isVideo = false
+                            apiKey = settings.agnesApiKey,
+                            modelName = settings.agnesImageModel,
+                            size = "${settings.defaultImageWidth}x${settings.defaultImageHeight}"
                         )
                     } catch (e: Exception) {
-                        AIResult.Error("Custom endpoint error: ${e.message}")
+                        AIResult.Error("Agnes API error: ${e.message}")
                     }
                 }
             }
@@ -232,7 +227,7 @@ class ChatViewModel @Inject constructor(
 
         val result = when (settings.selectedProvider) {
             AIProvider.OPENAI, AIProvider.STABILITY_AI -> {
-                AIResult.Error("Video generation not supported by this provider. Please use Replicate or Custom.")
+                AIResult.Error("Video generation not supported by this provider. Please use Replicate or Agnes.")
             }
             AIProvider.REPLICATE -> {
                 var finalResult: AIResult<String> = AIResult.Error("Not started")
@@ -243,17 +238,15 @@ class ChatViewModel @Inject constructor(
                 ).collect { finalResult = it }
                 finalResult
             }
-            AIProvider.CUSTOM -> {
-                val videoUrl = settings.customVideoEndpointUrl.ifBlank { settings.customEndpointUrl }
-                if (videoUrl.isBlank() || settings.customApiKey.isBlank()) {
-                    AIResult.Error("Please configure Custom Video Endpoint URL and API Key in Settings")
+            AIProvider.AGNES -> {
+                if (settings.agnesApiKey.isBlank()) {
+                    AIResult.Error("Agnes API key not set. Go to Settings.")
                 } else {
                     try {
-                        repo.generateVideoCustom(
+                        repo.generateVideoAgnes(
                             prompt = prompt,
-                            endpointUrl = videoUrl,
-                            apiKey = settings.customApiKey,
-                            modelName = settings.customModelName,
+                            apiKey = settings.agnesApiKey,
+                            modelName = settings.agnesVideoModel,
                             height = settings.videoHeight,
                             width = settings.videoWidth,
                             numFrames = settings.videoNumFrames,
@@ -263,7 +256,7 @@ class ChatViewModel @Inject constructor(
                             }
                         )
                     } catch (e: Exception) {
-                        AIResult.Error("Custom video endpoint error: ${e.message}")
+                        AIResult.Error("Agnes video error: ${e.message}")
                     }
                 }
             }

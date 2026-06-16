@@ -61,7 +61,7 @@ fun SettingsScreen(
     var showOAI       by remember { mutableStateOf(false) }
     var showStab      by remember { mutableStateOf(false) }
     var showRep       by remember { mutableStateOf(false) }
-    var showCustom    by remember { mutableStateOf(false) }
+    var showAgnes     by remember { mutableStateOf(false) }
     var justSaved     by remember { mutableStateOf(false) }
 
     Column(
@@ -82,6 +82,7 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
 
+            // ============ AI PROVIDER ============
             SectionTitle("AI Provider")
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -99,7 +100,7 @@ fun SettingsScreen(
                                     AIProvider.OPENAI       -> "OpenAI (DALL-E 3 + GPT-4)"
                                     AIProvider.STABILITY_AI -> "Stability AI (SDXL)"
                                     AIProvider.REPLICATE    -> "Replicate (Open models)"
-                                    AIProvider.CUSTOM       -> "Custom Endpoint"
+                                    AIProvider.AGNES        -> "Agnes AI (Image + Video)"
                                 }
                             )
                         }
@@ -107,51 +108,42 @@ fun SettingsScreen(
                 }
             }
 
-            // ============ CUSTOM ENDPOINT SETTINGS ============
-            if (s.selectedProvider == AIProvider.CUSTOM) {
-                SectionTitle("Custom Endpoint Settings")
+            // ============ AGNES SETTINGS ============
+            if (s.selectedProvider == AIProvider.AGNES) {
+                SectionTitle("Agnes AI Settings")
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier            = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        OutlinedTextField(
-                            value         = s.customEndpointUrl,
-                            onValueChange = { s = s.copy(customEndpointUrl = it) },
-                            label         = { Text("Image Endpoint URL") },
-                            placeholder   = { Text("https://api.example.com/v1/images/generations") },
-                            modifier      = Modifier.fillMaxWidth(),
-                            singleLine    = true
-                        )
-                        
-                        OutlinedTextField(
-                            value         = s.customVideoEndpointUrl,
-                            onValueChange = { s = s.copy(customVideoEndpointUrl = it) },
-                            label         = { Text("Video Endpoint URL") },
-                            placeholder   = { Text("https://api.ai.com/v1/videos") },
-                            modifier      = Modifier.fillMaxWidth(),
-                            singleLine    = true
-                        )
-                        
                         ApiKeyField(
-                            label = "Custom API Key",
-                            value = s.customApiKey,
-                            onValueChange = { s = s.copy(customApiKey = it) },
-                            visible = showCustom,
-                            onToggleVisibility = { showCustom = !showCustom }
+                            label = "Agnes API Key",
+                            value = s.agnesApiKey,
+                            onValueChange = { s = s.copy(agnesApiKey = it) },
+                            visible = showAgnes,
+                            onToggleVisibility = { showAgnes = !showAgnes }
                         )
                         
                         OutlinedTextField(
-                            value         = s.customModelName,
-                            onValueChange = { s = s.copy(customModelName = it) },
-                            label         = { Text("Model Name") },
-                            placeholder   = { Text("e.g., agnes-video-v2.0, sdxl") },
+                            value         = s.agnesImageModel,
+                            onValueChange = { s = s.copy(agnesImageModel = it) },
+                            label         = { Text("Image Model Name") },
+                            placeholder   = { Text("agnes-image-2.0-flash") },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true
+                        )
+                        
+                        OutlinedTextField(
+                            value         = s.agnesVideoModel,
+                            onValueChange = { s = s.copy(agnesVideoModel = it) },
+                            label         = { Text("Video Model Name") },
+                            placeholder   = { Text("agnes-video-v2.0") },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
                         
                         Text(
-                            text = "Note: Image and Video endpoints can be different. Leave Video URL blank to use Image URL for both.",
+                            text = "Agnes supports text-to-image, image-to-image, and video generation.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -159,7 +151,7 @@ fun SettingsScreen(
                 }
 
                 // ============ VIDEO PARAMETERS ============
-                SectionTitle("Video Parameters")
+                SectionTitle("Video Parameters (Agnes)")
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -330,8 +322,8 @@ fun SettingsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow("Version",   "1.0.0")
-                    InfoRow("Models",    "DALL-E 3, SDXL, SVD, Agnes Video")
-                    InfoRow("Providers", "OpenAI, Stability AI, Replicate, Custom")
+                    InfoRow("Models",    "DALL-E 3, SDXL, SVD, Agnes Image/Video")
+                    InfoRow("Providers", "OpenAI, Stability AI, Replicate, Agnes AI")
                 }
             }
         }

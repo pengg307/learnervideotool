@@ -48,6 +48,8 @@ class AIRepository @Inject constructor(
     private val dao: MessageDao
 ) {
 
+    // ============ OPENAI ============
+    
     suspend fun generateImageOpenAI(
         prompt: String,
         size: String = "1024x1024"
@@ -96,6 +98,8 @@ class AIRepository @Inject constructor(
             }
         }
 
+    // ============ STABILITY AI ============
+
     suspend fun generateImageStability(
         prompt: String,
         negativePrompt: String = "",
@@ -139,6 +143,8 @@ class AIRepository @Inject constructor(
             AIResult.Error("Network error: ${e.message}")
         }
     }
+
+    // ============ REPLICATE ============
 
     fun generateWithReplicate(
         prompt: String,
@@ -214,53 +220,60 @@ class AIRepository @Inject constructor(
         }
     }
 
+    // ============ AGNES AI ============
+
     /**
-     * Generate image using custom endpoint (OpenAI-compatible format)
+     * Generate image using Agnes AI API
+     * Supports text-to-image and image-to-image
+     * Endpoint: POST https://apihub.agnes-ai.com/v1/images/generations
      */
-    suspend fun generateImageCustom(
+    suspend fun generateImageAgnes(
         prompt: String,
-        endpointUrl: String,
         apiKey: String,
-        modelName: String,
-        width: Int = 1024,
-        height: Int = 1024,
-        steps: Int = 30,
-        cfgScale: Float = 7.0f,
-        isVideo: Boolean = false
+        modelName: String = "agnes-image-2.0-flash",
+        size: String = "1024x1024",
+        inputImage: String? = null,  // URL or Base64 for image-to-image
+        returnBase64: Boolean = false,
+        responseFormat: String = "url"
     ): AIResult<String> = withContext(Dispatchers.IO) {
         try {
-            if (endpointUrl.isBlank()) {
-                return@withContext AIResult.Error("${if (isVideo) "Video" else "Image"} endpoint URL is not set.")
-            }
             if (apiKey.isBlank()) {
-                return@withContext AIResult.Error("Custom API key is not set.")
+                return@withContext AIResult.Error("Agnes API key not set. Go to Settings.")
             }
 
+            val endpoint = "https://apihub.agnes-ai.com/v1/images/generations"
+
             val jsonBody = JSONObject().apply {
+                put("model", modelName)
                 put("prompt", prompt)
-                put("model", modelName.ifBlank { "default" })
-                if (isVideo) {
-                    put("num_frames", 25)
-                    put("fps", 8)
-                } else {
-                    put("n", 1)
-                    put("size", "${width}x${height}")
-                    put("steps", steps)
-                    put("cfg_scale", cfgScale)
+                put("size", size)
+                if (returnBase64) {
+                    put("return_base64", true)
+                }
+                if (responseFormat.isNotBlank()) {
+                    val extraBody = JSONObject().apply {
+                        put("response_format", responseFormat)
+                    }
+                    put("extra_body", extraBody)
+                }
+                inputImage?.let {
+                    val imagesArray = org.json.JSONArray()
+                    imagesArray.put(it)
+                    put("image", imagesArray)
                 }
             }
 
             val client = OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(120, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
                 .build()
 
             val requestBody = jsonBody.toString()
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url(endpointUrl)
+                .url(endpoint)
                 .addHeader("Authorization", "Bearer $apiKey")
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody)
@@ -271,21 +284,32 @@ class AIRepository @Inject constructor(
 
             if (response.isSuccessful && responseBody != null) {
                 val jsonResponse = JSONObject(responseBody)
-                var resultUrl = jsonResponse
-                    .optJSONArray("data")
-                    ?.optJSONObject(0)
-                    ?.optString("url", "")
-                    ?: jsonResponse.optString("output", "")
-                    ?: jsonResponse.optString("video_url", "")
-                    ?: jsonResponse.optString("image_url", "")
-
-                if (resultUrl.isNotBlank()) {
-                    AIResult.Success(resultUrl)
+                val dataArray = jsonResponse.optJSONArray("data")
+                if (dataArray != null && dataArray.length() > 0) {
+                    val firstItem = dataArray.getJSONObject(0)
+                    var imageUrl = firstItem.optString("url", "")
+                    if (imageUrl.isBlank()) {
+                        val b64 = firstItem.optString("b64_json", "")
+                        if (b64.isNotBlank()) {
+                            imageUrl = "data:image/png;base64,$b64"
+                        }
+                    }
+                    if (imageUrl.isNotBlank()) {
+                        AIResult.Success(imageUrl)
+                    } else {
+                        AIResult.Error("No image URL or Base64 in response: $responseBody")
+                    }
                 } else {
-                    AIResult.Error("No URL in response: $responseBody")
+                    val directUrl = jsonResponse.optString("url", "")
+                        .ifBlank { jsonResponse.optString("output", "") }
+                    if (directUrl.isNotBlank()) {
+                        AIResult.Success(directUrl)
+                    } else {
+                        AIResult.Error("No image data in response: $responseBody")
+                    }
                 }
             } else {
-                AIResult.Error("Endpoint error: ${response.code} - ${responseBody ?: "Unknown error"}")
+                AIResult.Error("Agnes API error: ${response.code} - ${responseBody ?: "Unknown error"}")
             }
         } catch (e: Exception) {
             AIResult.Error("Network error: ${e.message}")
@@ -293,14 +317,14 @@ class AIRepository @Inject constructor(
     }
 
     /**
-     * Generate video using custom endpoint with async polling
-     * Supports Agnes AI API format
+     * Generate video using Agnes AI API with async polling
+     * Endpoint: POST https://apihub.agnes-ai.com/v1/videos
+     * Polling: GET https://apihub.agnes-ai.com/agnesapi?video_id=<VIDEO_ID>
      */
-    suspend fun generateVideoCustom(
+    suspend fun generateVideoAgnes(
         prompt: String,
-        endpointUrl: String,
         apiKey: String,
-        modelName: String,
+        modelName: String = "agnes-video-v2.0",
         height: Int = 768,
         width: Int = 1152,
         numFrames: Int = 121,
@@ -308,16 +332,15 @@ class AIRepository @Inject constructor(
         onProgress: ((Int) -> Unit)? = null
     ): AIResult<String> = withContext(Dispatchers.IO) {
         try {
-            if (endpointUrl.isBlank()) {
-                return@withContext AIResult.Error("Video endpoint URL is not set.")
-            }
             if (apiKey.isBlank()) {
-                return@withContext AIResult.Error("Custom API key is not set.")
+                return@withContext AIResult.Error("Agnes API key not set. Go to Settings.")
             }
 
             // ============ STEP 1: Create Video Task ============
+            val endpoint = "https://apihub.agnes-ai.com/v1/videos"
+            
             val createBody = JSONObject().apply {
-                put("model", modelName.ifBlank { "agnes-video-v2.0" })
+                put("model", modelName)
                 put("prompt", prompt)
                 put("height", height)
                 put("width", width)
@@ -335,7 +358,7 @@ class AIRepository @Inject constructor(
                 .toRequestBody("application/json".toMediaType())
 
             val createRequest = Request.Builder()
-                .url(endpointUrl)
+                .url(endpoint)
                 .addHeader("Authorization", "Bearer $apiKey")
                 .addHeader("Content-Type", "application/json")
                 .post(requestBody)
@@ -349,8 +372,6 @@ class AIRepository @Inject constructor(
             }
 
             val jsonResponse = JSONObject(createResponseBody)
-            
-            // Extract video_id (recommended) or task_id
             val videoId = jsonResponse.optString("video_id", "")
                 .ifBlank { jsonResponse.optString("task_id", "") }
                 .ifBlank { jsonResponse.optString("id", "") }
@@ -360,16 +381,10 @@ class AIRepository @Inject constructor(
             }
 
             // ============ STEP 2: Poll for Result ============
-            // Build the status check URL
-            val baseUrl = endpointUrl.trimEnd('/')
-            val statusUrl = if (baseUrl.contains("agnes-ai.com") || baseUrl.contains("apihub.agnes-ai.com")) {
-                "https://apihub.agnes-ai.com/agnesapi?video_id=$videoId"
-            } else {
-                "$baseUrl/status?video_id=$videoId"
-            }
+            val statusUrl = "https://apihub.agnes-ai.com/agnesapi?video_id=$videoId"
 
             var attempts = 0
-            val maxAttempts = 120  // 120 * 3s = 6 minutes max
+            val maxAttempts = 120  // 6 minutes max
             var lastStatus = "queued"
             var lastProgress = 0
 
@@ -427,6 +442,8 @@ class AIRepository @Inject constructor(
             AIResult.Error("Network error: ${e.message}")
         }
     }
+
+    // ============ DATABASE OPERATIONS ============
 
     suspend fun getAllGenerated(): List<Message> = dao.getAllGenerated()
     suspend fun getMessages(sessionId: String): List<Message> = dao.getBySession(sessionId)
