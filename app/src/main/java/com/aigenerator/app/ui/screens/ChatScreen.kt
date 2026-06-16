@@ -105,6 +105,7 @@ fun ChatScreen(
     var inputText by remember { mutableStateOf("") }
     var isListening by remember { mutableStateOf(false) }
     var showModes by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     val audioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
 
@@ -141,33 +142,89 @@ fun ChatScreen(
             .fillMaxSize()
             .padding(bottom = paddingValues.calculateBottomPadding())
     ) {
-        // Top Bar
-        ChatTopBar(
-            currentMode = state.currentMode,
-            onModeToggle = { showModes = !showModes },
-            onClearChat = { vm.clearChat() }
+        // TopAppBar
+        TopAppBar(
+            title = {
+                Column {
+                    Text(stringResource(R.string.chat_title), fontWeight = FontWeight.Bold)
+                    Text(
+                        text = when (state.currentMode) {
+                            GenerationMode.IMAGE -> stringResource(R.string.chat_subtitle_image)
+                            GenerationMode.VIDEO -> stringResource(R.string.chat_subtitle_video)
+                            GenerationMode.IMAGE_TO_IMAGE -> stringResource(R.string.chat_subtitle_img2img)
+                            GenerationMode.IMAGE_TO_VIDEO -> stringResource(R.string.chat_subtitle_img2video)
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = { showModes = !showModes }) {
+                    Icon(Icons.Default.Tune, contentDescription = null)
+                }
+                IconButton(onClick = { vm.clearChat() }) {
+                    Icon(Icons.Default.DeleteSweep, contentDescription = null)
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            )
         )
 
-        // Mode Chips
+        // Mode chips
         AnimatedVisibility(visible = showModes) {
-            ModeChips(
-                currentMode = state.currentMode,
-                onModeSelected = { mode ->
-                    vm.setMode(mode)
-                    showModes = false
+            Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val modeLabels = listOf(
+                        GenerationMode.IMAGE to stringResource(R.string.mode_image),
+                        GenerationMode.VIDEO to stringResource(R.string.mode_video),
+                        GenerationMode.IMAGE_TO_IMAGE to stringResource(R.string.mode_img2img),
+                        GenerationMode.IMAGE_TO_VIDEO to stringResource(R.string.mode_img2video)
+                    )
+                    modeLabels.forEach { (mode, label) ->
+                        FilterChip(
+                            selected = state.currentMode == mode,
+                            onClick = { vm.setMode(mode); showModes = false },
+                            label = { Text(label) }
+                        )
+                    }
                 }
-            )
+            }
         }
 
-        // Uploaded Image Preview
+        // Uploaded image preview
         AnimatedVisibility(visible = state.uploadedImageUri != null) {
-            UploadedImagePreview(
-                imageUri = state.uploadedImageUri,
-                onRemove = { vm.removeUploadedImage() }
-            )
+            Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AsyncImage(
+                        model = state.uploadedImageUri,
+                        contentDescription = null,
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.reference_image), style = MaterialTheme.typography.labelMedium)
+                        Text(stringResource(R.string.reference_image_desc), style = MaterialTheme.typography.labelSmall)
+                    }
+                    IconButton(onClick = { vm.removeUploadedImage() }) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_image))
+                    }
+                }
+            }
         }
 
-        // Messages List
+        // Messages
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -182,219 +239,81 @@ fun ChatScreen(
             }
         }
 
-        // Input Row
-        ChatInputRow(
-            inputText = inputText,
-            onInputChange = { inputText = it },
-            isListening = isListening,
-            isGenerating = state.isGenerating,
-            onSend = {
-                if (inputText.isNotBlank() && !state.isGenerating) {
-                    vm.sendMessage(inputText)
-                    inputText = ""
-                }
-            },
-            onVoiceToggle = {
-                if (SpeechRecognizer.isRecognitionAvailable(context)) {
-                    if (audioPermission.status.isGranted) {
-                        isListening = true
-                        speechLauncher.launch(
-                            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(
-                                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-                                )
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                putExtra(RecognizerIntent.EXTRA_PROMPT, "Describe what you want to generate...")
-                            }
-                        )
-                    } else {
-                        audioPermission.launchPermissionRequest()
-                    }
-                }
-            },
-            onImagePicker = { imagePicker.launch("image/*") }
-        )
-    }
-}
-
-@Composable
-fun ChatTopBar(
-    currentMode: GenerationMode,
-    onModeToggle: () -> Unit,
-    onClearChat: () -> Unit
-) {
-    TopAppBar(
-        title = {
+        // Input row
+        Surface(shadowElevation = 8.dp) {
             Column {
-                Text(stringResource(R.string.chat_title), fontWeight = FontWeight.Bold)
-                Text(
-                    text = when (currentMode) {
-                        GenerationMode.IMAGE -> stringResource(R.string.chat_subtitle_image)
-                        GenerationMode.VIDEO -> stringResource(R.string.chat_subtitle_video)
-                        GenerationMode.IMAGE_TO_IMAGE -> stringResource(R.string.chat_subtitle_img2img)
-                        GenerationMode.IMAGE_TO_VIDEO -> stringResource(R.string.chat_subtitle_img2video)
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
-        },
-        actions = {
-            IconButton(onClick = onModeToggle) {
-                Icon(Icons.Default.Tune, contentDescription = null)
-            }
-            IconButton(onClick = onClearChat) {
-                Icon(Icons.Default.DeleteSweep, contentDescription = null)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
-    )
-}
+                HorizontalDivider()
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    IconButton(onClick = { imagePicker.launch("image/*") }) {
+                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    }
 
-@Composable
-fun ModeChips(
-    currentMode: GenerationMode,
-    onModeSelected: (GenerationMode) -> Unit
-) {
-    Surface(color = MaterialTheme.colorScheme.surfaceVariant) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            val modes = listOf(
-                GenerationMode.IMAGE to stringResource(R.string.mode_image),
-                GenerationMode.VIDEO to stringResource(R.string.mode_video),
-                GenerationMode.IMAGE_TO_IMAGE to stringResource(R.string.mode_img2img),
-                GenerationMode.IMAGE_TO_VIDEO to stringResource(R.string.mode_img2video)
-            )
-            modes.forEach { (mode, label) ->
-                FilterChip(
-                    selected = currentMode == mode,
-                    onClick = { onModeSelected(mode) },
-                    label = { Text(label) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun UploadedImagePreview(
-    imageUri: String?,
-    onRemove: () -> Unit
-) {
-    Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            AsyncImage(
-                model = imageUri,
-                contentDescription = null,
-                modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    stringResource(R.string.reference_image),
-                    style = MaterialTheme.typography.labelMedium
-                )
-                Text(
-                    stringResource(R.string.reference_image_desc),
-                    style = MaterialTheme.typography.labelSmall
-                )
-            }
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_image))
-            }
-        }
-    }
-}
-
-@Composable
-fun ChatInputRow(
-    inputText: String,
-    onInputChange: (String) -> Unit,
-    isListening: Boolean,
-    isGenerating: Boolean,
-    onSend: () -> Unit,
-    onVoiceToggle: () -> Unit,
-    onImagePicker: () -> Unit
-) {
-    Surface(shadowElevation = 8.dp) {
-        Column {
-            HorizontalDivider()
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                IconButton(onClick = onImagePicker) {
-                    Icon(
-                        Icons.Default.AddPhotoAlternate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = onInputChange,
-                    modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
-                    placeholder = {
-                        Text(
-                            if (isListening) stringResource(R.string.input_placeholder_listening)
-                            else stringResource(R.string.input_placeholder)
-                        )
-                    },
-                    shape = RoundedCornerShape(24.dp),
-                    maxLines = 4,
-                    enabled = !isGenerating && !isListening,
-                    trailingIcon = {
-                        if (inputText.isNotEmpty()) {
-                            IconButton(onClick = { onInputChange("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_text))
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                        placeholder = {
+                            Text(if (isListening) stringResource(R.string.input_placeholder_listening)
+                            else stringResource(R.string.input_placeholder))
+                        },
+                        shape = RoundedCornerShape(24.dp),
+                        maxLines = 4,
+                        enabled = !state.isGenerating && !isListening,
+                        trailingIcon = {
+                            if (inputText.isNotEmpty()) {
+                                IconButton(onClick = { inputText = "" }) {
+                                    Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_text))
+                                }
                             }
                         }
-                    }
-                )
-
-                IconButton(onClick = onVoiceToggle) {
-                    Icon(
-                        imageVector = if (isListening) Icons.Default.MicOff else Icons.Default.Mic,
-                        contentDescription = stringResource(R.string.voice_input),
-                        tint = if (isListening) MaterialTheme.colorScheme.error
-                        else MaterialTheme.colorScheme.primary
                     )
-                }
 
-                FloatingActionButton(
-                    onClick = onSend,
-                    modifier = Modifier.size(48.dp),
-                    containerColor = if (!isGenerating && inputText.isNotBlank())
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    if (isGenerating) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    } else {
+                    IconButton(
+                        onClick = {
+                            if (SpeechRecognizer.isRecognitionAvailable(context)) {
+                                if (audioPermission.status.isGranted) {
+                                    isListening = true
+                                    speechLauncher.launch(
+                                        Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                                            putExtra(RecognizerIntent.EXTRA_PROMPT, "Describe what you want to generate...")
+                                        }
+                                    )
+                                } else {
+                                    audioPermission.launchPermissionRequest()
+                                }
+                            }
+                        }
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Send,
-                            contentDescription = stringResource(R.string.send),
-                            tint = if (inputText.isNotBlank()) Color.White
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            imageVector = if (isListening) Icons.Default.MicOff else Icons.Default.Mic,
+                            contentDescription = stringResource(R.string.voice_input),
+                            tint = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
                         )
+                    }
+
+                    FloatingActionButton(
+                        onClick = {
+                            if (inputText.isNotBlank() && !state.isGenerating) {
+                                vm.sendMessage(inputText)
+                                inputText = ""
+                            }
+                        },
+                        modifier = Modifier.size(48.dp),
+                        containerColor = if (!state.isGenerating && inputText.isNotBlank())
+                            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                    ) {
+                        if (state.isGenerating) {
+                            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        } else {
+                            Icon(Icons.Default.Send, contentDescription = stringResource(R.string.send),
+                                tint = if (inputText.isNotBlank()) Color.White else MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
                     }
                 }
             }
@@ -406,27 +325,16 @@ fun ChatInputRow(
 fun WelcomeCard(mode: GenerationMode) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
     ) {
         Column(
             modifier = Modifier.padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = Icons.Default.AutoAwesome,
-                contentDescription = null,
-                modifier = Modifier.size(56.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.welcome_title),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            Icon(Icons.Default.AutoAwesome, null, Modifier.size(56.dp), MaterialTheme.colorScheme.primary)
+            Spacer(Modifier.height(12.dp))
+            Text(stringResource(R.string.welcome_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
             Text(
                 text = when (mode) {
                     GenerationMode.IMAGE -> stringResource(R.string.welcome_image_desc)
@@ -437,23 +345,18 @@ fun WelcomeCard(mode: GenerationMode) {
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.bodyMedium
             )
-            Spacer(modifier = Modifier.height(16.dp))
-            val examples = listOf(
+            Spacer(Modifier.height(16.dp))
+            listOf(
                 stringResource(R.string.example_1),
                 stringResource(R.string.example_2),
                 stringResource(R.string.example_3)
-            )
-            examples.forEach { example ->
+            ).forEach { example ->
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
                     shape = RoundedCornerShape(8.dp),
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                 ) {
-                    Text(
-                        text = example,
-                        modifier = Modifier.padding(10.dp, 6.dp),
-                        style = MaterialTheme.typography.bodySmall
-                    )
+                    Text(example, modifier = Modifier.padding(10.dp, 6.dp), style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -462,11 +365,10 @@ fun WelcomeCard(mode: GenerationMode) {
 
 @Composable
 fun ChatBubble(message: Message) {
-    val isUser = message.type in listOf(
-        MessageType.USER_TEXT,
-        MessageType.USER_VOICE,
-        MessageType.USER_IMAGE
-    )
+    val isUser = message.type in listOf(MessageType.USER_TEXT, MessageType.USER_VOICE, MessageType.USER_IMAGE)
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var saveLoading by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -474,264 +376,152 @@ fun ChatBubble(message: Message) {
     ) {
         if (!isUser) {
             Box(
-                modifier = Modifier.size(32.dp).clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondary),
+                modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondary),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.AutoAwesome, null, Modifier.size(18.dp), Color.White)
             }
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(Modifier.width(6.dp))
         }
 
-        MessageContent(message = message)
+        when (message.type) {
+            MessageType.USER_TEXT, MessageType.USER_VOICE ->
+                Card(shape = RoundedCornerShape(18.dp, 4.dp, 18.dp, 18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary)) {
+                    Row(modifier = Modifier.padding(12.dp, 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        if (message.type == MessageType.USER_VOICE) {
+                            Icon(Icons.Default.Mic, null, Modifier.size(14.dp), Color.White.copy(alpha = 0.7f))
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        Text(message.content, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+
+            MessageType.USER_IMAGE ->
+                Card(shape = RoundedCornerShape(18.dp, 4.dp, 18.dp, 18.dp)) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        message.localMediaPath?.let { path ->
+                            AsyncImage(model = path, contentDescription = null,
+                                modifier = Modifier.size(180.dp).clip(RoundedCornerShape(10.dp)),
+                                contentScale = ContentScale.Crop)
+                        }
+                        Text(stringResource(R.string.reference_image), modifier = Modifier.padding(top = 4.dp),
+                            style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+            MessageType.AI_TEXT ->
+                Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                    Text(message.content, modifier = Modifier.padding(12.dp, 8.dp), style = MaterialTheme.typography.bodyMedium)
+                }
+
+            MessageType.AI_IMAGE ->
+                Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(message.content, modifier = Modifier.padding(bottom = 4.dp), style = MaterialTheme.typography.labelSmall)
+                        message.mediaUrl?.let { url ->
+                            AsyncImage(model = url, contentDescription = "Generated image",
+                                modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp).clip(RoundedCornerShape(10.dp)),
+                                contentScale = ContentScale.FillWidth)
+                        }
+                        Row(modifier = Modifier.padding(top = 4.dp)) {
+                            TextButton(onClick = {
+                                if (saveLoading) return@TextButton
+                                saveLoading = true
+                                scope.launch {
+                                    try {
+                                        message.mediaUrl?.let { imageUrl ->
+                                            val connection = java.net.URL(imageUrl).openConnection()
+                                            connection.connect()
+                                            val bitmap = BitmapFactory.decodeStream(connection.getInputStream())
+                                            val saved = android.provider.MediaStore.Images.Media.insertImage(
+                                                context.contentResolver, bitmap,
+                                                "generated_image_${System.currentTimeMillis()}.jpg",
+                                                context.getString(R.string.app_name)
+                                            )
+                                            Toast.makeText(context,
+                                                if (saved != null) context.getString(R.string.image_saved)
+                                                else context.getString(R.string.save_failed),
+                                                Toast.LENGTH_SHORT).show()
+                                        }
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context, "${context.getString(R.string.save_failed)}: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    } finally { saveLoading = false }
+                                }
+                            }) {
+                                if (saveLoading) CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                else Icon(Icons.Default.Download, null, Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(if (saveLoading) stringResource(R.string.saving) else stringResource(R.string.save))
+                            }
+                            TextButton(onClick = {
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, message.mediaUrl ?: message.content)
+                                    context.startActivity(Intent.createChooser(this, context.getString(R.string.share)))
+                                }
+                            }) {
+                                Icon(Icons.Default.Share, null, Modifier.size(16.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.share))
+                            }
+                        }
+                    }
+                }
+
+            MessageType.AI_VIDEO ->
+                Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(message.content, style = MaterialTheme.typography.labelSmall)
+                        Spacer(Modifier.height(4.dp))
+                        message.mediaUrl?.let {
+                            Text(stringResource(R.string.video_ready), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary)
+                            TextButton(onClick = { }) {
+                                Icon(Icons.Default.PlayCircle, null, Modifier.size(20.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text(stringResource(R.string.play_video))
+                            }
+                        }
+                    }
+                }
+
+            MessageType.LOADING ->
+                Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+                    Row(modifier = Modifier.padding(16.dp, 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Text(message.content, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+
+            MessageType.ERROR ->
+                Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)) {
+                    Row(modifier = Modifier.padding(12.dp, 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Error, null, Modifier.size(16.dp), MaterialTheme.colorScheme.error)
+                        Spacer(Modifier.width(6.dp))
+                        Text(message.content, style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer)
+                    }
+                }
+
+            MessageType.SYSTEM ->
+                Text(message.content, modifier = Modifier.fillMaxWidth().padding(4.dp),
+                    style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
 
         if (isUser) {
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(Modifier.width(6.dp))
             Box(
-                modifier = Modifier.size(32.dp).clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary),
+                modifier = Modifier.size(32.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(Icons.Default.Person, null, Modifier.size(18.dp), Color.White)
             }
         }
     }
-}
-
-@Composable
-fun MessageContent(message: Message) {
-    when (message.type) {
-        MessageType.USER_TEXT, MessageType.USER_VOICE -> UserTextMessage(message)
-        MessageType.USER_IMAGE -> UserImageMessage(message)
-        MessageType.AI_TEXT -> AITextMessage(message)
-        MessageType.AI_IMAGE -> AIImageMessage(message)
-        MessageType.AI_VIDEO -> AIVideoMessage(message)
-        MessageType.LOADING -> LoadingMessage(message)
-        MessageType.ERROR -> ErrorMessage(message)
-        MessageType.SYSTEM -> SystemMessage(message)
-    }
-}
-
-@Composable
-fun UserTextMessage(message: Message) {
-    Card(
-        shape = RoundedCornerShape(18.dp, 4.dp, 18.dp, 18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp, 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (message.type == MessageType.USER_VOICE) {
-                Icon(Icons.Default.Mic, null,
-                    Modifier.size(14.dp), Color.White.copy(alpha = 0.7f))
-                Spacer(modifier = Modifier.width(4.dp))
-            }
-            Text(message.content, color = Color.White,
-                style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-fun UserImageMessage(message: Message) {
-    Card(shape = RoundedCornerShape(18.dp, 4.dp, 18.dp, 18.dp)) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            message.localMediaPath?.let { path ->
-                AsyncImage(
-                    model = path,
-                    contentDescription = null,
-                    modifier = Modifier.size(180.dp)
-                        .clip(RoundedCornerShape(10.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            Text(
-                stringResource(R.string.reference_image),
-                modifier = Modifier.padding(top = 4.dp),
-                style = MaterialTheme.typography.labelSmall
-            )
-        }
-    }
-}
-
-@Composable
-fun AITextMessage(message: Message) {
-    Card(
-        shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Text(message.content, modifier = Modifier.padding(12.dp, 8.dp),
-            style = MaterialTheme.typography.bodyMedium)
-    }
-}
-
-@Composable
-fun AIImageMessage(message: Message) {
-    Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(
-                message.content,
-                modifier = Modifier.padding(bottom = 4.dp),
-                style = MaterialTheme.typography.labelSmall
-            )
-            message.mediaUrl?.let { url ->
-                AsyncImage(
-                    model = url,
-                    contentDescription = "Generated image",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 320.dp)
-                        .clip(RoundedCornerShape(10.dp)),
-                    contentScale = ContentScale.FillWidth
-                )
-            }
-            ImageActionButtons(message = message)
-        }
-    }
-}
-
-@Composable
-fun ImageActionButtons(message: Message) {
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var saveLoading by remember { mutableStateOf(false) }
-
-    Row(modifier = Modifier.padding(top = 4.dp)) {
-        TextButton(
-            onClick = {
-                if (saveLoading) return@TextButton
-                saveLoading = true
-                scope.launch {
-                    try {
-                        message.mediaUrl?.let { imageUrl ->
-                            val connection = java.net.URL(imageUrl).openConnection()
-                            connection.connect()
-                            val inputStream = connection.getInputStream()
-                            val bitmap = BitmapFactory.decodeStream(inputStream)
-
-                            val saved = android.provider.MediaStore.Images.Media.insertImage(
-                                context.contentResolver,
-                                bitmap,
-                                "generated_image_${System.currentTimeMillis()}.jpg",
-                                context.getString(R.string.app_name)
-                            )
-
-                            Toast.makeText(
-                                context,
-                                if (saved != null) context.getString(R.string.image_saved)
-                                else context.getString(R.string.save_failed),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    } catch (e: Exception) {
-                        Toast.makeText(
-                            context,
-                            "${context.getString(R.string.save_failed)}: ${e.message}",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } finally {
-                        saveLoading = false
-                    }
-                }
-            }
-        ) {
-            if (saveLoading) {
-                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-            } else {
-                Icon(Icons.Default.Download, null, Modifier.size(16.dp))
-            }
-            Spacer(Modifier.width(4.dp))
-            Text(if (saveLoading) stringResource(R.string.saving) else stringResource(R.string.save))
-        }
-
-        TextButton(onClick = {
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/plain"
-                putExtra(Intent.EXTRA_TEXT, message.mediaUrl ?: message.content)
-            }
-            context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share)))
-        }) {
-            Icon(Icons.Default.Share, null, Modifier.size(16.dp))
-            Spacer(Modifier.width(4.dp))
-            Text(stringResource(R.string.share))
-        }
-    }
-}
-
-@Composable
-fun AIVideoMessage(message: Message) {
-    Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
-        Column(modifier = Modifier.padding(8.dp)) {
-            Text(message.content, style = MaterialTheme.typography.labelSmall)
-            Spacer(modifier = Modifier.height(4.dp))
-            message.mediaUrl?.let {
-                Text(
-                    stringResource(R.string.video_ready),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                TextButton(onClick = { }) {
-                    Icon(Icons.Default.PlayCircle, null, Modifier.size(20.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(stringResource(R.string.play_video))
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun LoadingMessage(message: Message) {
-    Card(
-        shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp, 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-            Spacer(Modifier.width(10.dp))
-            Text(message.content, style = MaterialTheme.typography.bodySmall)
-        }
-    }
-}
-
-@Composable
-fun ErrorMessage(message: Message) {
-    Card(
-        shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.errorContainer
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp, 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.Error, null, Modifier.size(16.dp),
-                MaterialTheme.colorScheme.error)
-            Spacer(Modifier.width(6.dp))
-            Text(message.content, style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onErrorContainer)
-        }
-    }
-}
-
-@Composable
-fun SystemMessage(message: Message) {
-    Text(
-        text = message.content,
-        modifier = Modifier.fillMaxWidth().padding(4.dp),
-        style = MaterialTheme.typography.labelSmall,
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
 }
