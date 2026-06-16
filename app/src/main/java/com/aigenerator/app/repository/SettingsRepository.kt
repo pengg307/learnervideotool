@@ -9,6 +9,7 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.aigenerator.app.BuildConfig
 import com.aigenerator.app.model.AIProvider
 import com.aigenerator.app.model.AppSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -55,9 +56,9 @@ class SettingsRepository @Inject constructor(
             openAiApiKey          = prefs[Keys.OPENAI_KEY]  ?: "",
             stabilityApiKey       = prefs[Keys.STAB_KEY]    ?: "",
             replicateApiKey       = prefs[Keys.REP_KEY]     ?: "",
-            agnesApiKey           = prefs[Keys.AGNES_KEY]   ?: "",
-            agnesImageModel       = prefs[Keys.AGNES_IMG_MODEL] ?: "agnes-image-2.0-flash",
-            agnesVideoModel       = prefs[Keys.AGNES_VID_MODEL] ?: "agnes-video-v2.0",
+            agnesApiKey           = prefs[Keys.AGNES_KEY]   ?: BuildConfig.AGNES_API_KEY,
+            agnesImageModel       = prefs[Keys.AGNES_IMG_MODEL] ?: BuildConfig.AGNES_IMAGE_MODEL,
+            agnesVideoModel       = prefs[Keys.AGNES_VID_MODEL] ?: BuildConfig.AGNES_VIDEO_MODEL,
             defaultImageModel     = prefs[Keys.IMG_MODEL]   ?: "dall-e-3",
             defaultVideoModel     = prefs[Keys.VID_MODEL]   ?: "stable-video-diffusion",
             defaultImageWidth     = prefs[Keys.IMG_W]       ?: 1024,
@@ -67,18 +68,18 @@ class SettingsRepository @Inject constructor(
             enableNegativePrompt  = prefs[Keys.NEG]         ?: true,
             saveToGallery         = prefs[Keys.SAVE]        ?: true,
             selectedProvider      = try {
-                AIProvider.valueOf(prefs[Keys.PROVIDER] ?: "OPENAI")
+                AIProvider.valueOf(prefs[Keys.PROVIDER] ?: AIProvider.AGNES.name)
             } catch (e: Exception) {
-                AIProvider.OPENAI
+                AIProvider.AGNES
             },
             replicateImageVersion = prefs[Keys.REP_IMG_VER]
                 ?: "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
             replicateVideoVersion = prefs[Keys.REP_VID_VER]
                 ?: "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
-            videoWidth            = prefs[Keys.VIDEO_WIDTH] ?: 1152,
-            videoHeight           = prefs[Keys.VIDEO_HEIGHT] ?: 768,
-            videoNumFrames        = prefs[Keys.VIDEO_NUM_FRAMES] ?: 121,
-            videoFrameRate        = prefs[Keys.VIDEO_FRAME_RATE] ?: 24
+            videoWidth            = prefs[Keys.VIDEO_WIDTH] ?: BuildConfig.AGNES_VIDEO_WIDTH,
+            videoHeight           = prefs[Keys.VIDEO_HEIGHT] ?: BuildConfig.AGNES_VIDEO_HEIGHT,
+            videoNumFrames        = prefs[Keys.VIDEO_NUM_FRAMES] ?: BuildConfig.AGNES_VIDEO_FRAMES,
+            videoFrameRate        = prefs[Keys.VIDEO_FRAME_RATE] ?: BuildConfig.AGNES_VIDEO_FPS
         )
     }
 
@@ -89,7 +90,7 @@ class SettingsRepository @Inject constructor(
             prefs[Keys.OPENAI_KEY]    = settings.openAiApiKey
             prefs[Keys.STAB_KEY]      = settings.stabilityApiKey
             prefs[Keys.REP_KEY]       = settings.replicateApiKey
-            prefs[Keys.AGNES_KEY]     = settings.agnesApiKey.trim()
+            prefs[Keys.AGNES_KEY]     = settings.agnesApiKey
             prefs[Keys.AGNES_IMG_MODEL] = settings.agnesImageModel
             prefs[Keys.AGNES_VID_MODEL] = settings.agnesVideoModel
             prefs[Keys.IMG_MODEL]     = settings.defaultImageModel

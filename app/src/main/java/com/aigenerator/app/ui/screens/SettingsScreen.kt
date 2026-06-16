@@ -47,6 +47,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aigenerator.app.BuildConfig
 import com.aigenerator.app.R
 import com.aigenerator.app.model.AIProvider
 import com.aigenerator.app.viewmodel.SettingsViewModel
@@ -118,28 +119,30 @@ fun SettingsScreen(
                         modifier            = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        // Use BuildConfig defaults if value is blank
+                        val defaultAgnesKey = BuildConfig.AGNES_API_KEY
                         ApiKeyField(
                             label = stringResource(R.string.agnes_api_key),
-                            value = s.agnesApiKey,
+                            value = s.agnesApiKey.ifBlank { defaultAgnesKey },
                             onValueChange = { s = s.copy(agnesApiKey = it) },
                             visible = showAgnes,
                             onToggleVisibility = { showAgnes = !showAgnes }
                         )
                         
                         OutlinedTextField(
-                            value         = s.agnesImageModel,
+                            value         = s.agnesImageModel.ifBlank { BuildConfig.AGNES_IMAGE_MODEL },
                             onValueChange = { s = s.copy(agnesImageModel = it) },
                             label         = { Text(stringResource(R.string.agnes_image_model)) },
-                            placeholder   = { Text("agnes-image-2.0-flash") },
+                            placeholder   = { Text(BuildConfig.AGNES_IMAGE_MODEL) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
                         
                         OutlinedTextField(
-                            value         = s.agnesVideoModel,
+                            value         = s.agnesVideoModel.ifBlank { BuildConfig.AGNES_VIDEO_MODEL },
                             onValueChange = { s = s.copy(agnesVideoModel = it) },
                             label         = { Text(stringResource(R.string.agnes_video_model)) },
-                            placeholder   = { Text("agnes-video-v2.0") },
+                            placeholder   = { Text(BuildConfig.AGNES_VIDEO_MODEL) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
@@ -162,36 +165,40 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = s.videoWidth.toString(),
                             onValueChange = { 
-                                s = s.copy(videoWidth = it.toIntOrNull() ?: 1152) 
+                                s = s.copy(videoWidth = it.toIntOrNull() ?: BuildConfig.AGNES_VIDEO_WIDTH) 
                             },
                             label = { Text(stringResource(R.string.video_width)) },
+                            placeholder = { Text(BuildConfig.AGNES_VIDEO_WIDTH.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                         OutlinedTextField(
                             value = s.videoHeight.toString(),
                             onValueChange = { 
-                                s = s.copy(videoHeight = it.toIntOrNull() ?: 768) 
+                                s = s.copy(videoHeight = it.toIntOrNull() ?: BuildConfig.AGNES_VIDEO_HEIGHT) 
                             },
                             label = { Text(stringResource(R.string.video_height)) },
+                            placeholder = { Text(BuildConfig.AGNES_VIDEO_HEIGHT.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                         OutlinedTextField(
                             value = s.videoNumFrames.toString(),
                             onValueChange = { 
-                                s = s.copy(videoNumFrames = it.toIntOrNull() ?: 121) 
+                                s = s.copy(videoNumFrames = it.toIntOrNull() ?: BuildConfig.AGNES_VIDEO_FRAMES) 
                             },
                             label = { Text(stringResource(R.string.video_frames)) },
+                            placeholder = { Text(BuildConfig.AGNES_VIDEO_FRAMES.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                         OutlinedTextField(
                             value = s.videoFrameRate.toString(),
                             onValueChange = { 
-                                s = s.copy(videoFrameRate = it.toIntOrNull() ?: 24) 
+                                s = s.copy(videoFrameRate = it.toIntOrNull() ?: BuildConfig.AGNES_VIDEO_FPS) 
                             },
                             label = { Text(stringResource(R.string.video_fps)) },
+                            placeholder = { Text(BuildConfig.AGNES_VIDEO_FPS.toString()) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )

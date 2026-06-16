@@ -2,6 +2,7 @@ package com.aigenerator.app.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.aigenerator.app.BuildConfig
 import com.google.gson.annotations.SerializedName
 import java.util.UUID
 
@@ -114,7 +115,7 @@ data class ReplicateResponse(
 // ============ AGNES API MODELS ============
 
 data class AgnesImageRequest(
-    val model: String = "agnes-image-2.0-flash",
+    val model: String = BuildConfig.AGNES_IMAGE_MODEL,
     val prompt: String,
     val size: String = "1024x1024",
     val image: List<String>? = null,
@@ -138,14 +139,14 @@ data class AgnesImageData(
 )
 
 data class AgnesVideoRequest(
-    val model: String = "agnes-video-v2.0",
+    val model: String = BuildConfig.AGNES_VIDEO_MODEL,
     val prompt: String,
-    val height: Int = 768,
-    val width: Int = 1152,
+    val height: Int = BuildConfig.AGNES_VIDEO_HEIGHT,
+    val width: Int = BuildConfig.AGNES_VIDEO_WIDTH,
     @SerializedName("num_frames")
-    val numFrames: Int = 121,
+    val numFrames: Int = BuildConfig.AGNES_VIDEO_FRAMES,
     @SerializedName("frame_rate")
-    val frameRate: Int = 24
+    val frameRate: Int = BuildConfig.AGNES_VIDEO_FPS
 )
 
 data class AgnesVideoResponse(
@@ -173,10 +174,10 @@ data class AppSettings(
     val stabilityApiKey: String = "",
     // Replicate
     val replicateApiKey: String = "",
-    // Agnes AI
-    val agnesApiKey: String = "",
-    val agnesImageModel: String = "agnes-image-2.0-flash",
-    val agnesVideoModel: String = "agnes-video-v2.0",
+    // Agnes AI - Uses BuildConfig from local.properties
+    val agnesApiKey: String = BuildConfig.AGNES_API_KEY,
+    val agnesImageModel: String = BuildConfig.AGNES_IMAGE_MODEL,
+    val agnesVideoModel: String = BuildConfig.AGNES_VIDEO_MODEL,
     // Image settings
     val defaultImageModel: String = "dall-e-3",
     val defaultVideoModel: String = "stable-video-diffusion",
@@ -186,15 +187,15 @@ data class AppSettings(
     val defaultCfgScale: Float = 7.0f,
     val enableNegativePrompt: Boolean = true,
     val saveToGallery: Boolean = true,
-    val selectedProvider: AIProvider = AIProvider.OPENAI,
+    val selectedProvider: AIProvider = AIProvider.AGNES,
     // Replicate versions
     val replicateImageVersion: String =
         "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
     val replicateVideoVersion: String =
         "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
-    // Video parameters
-    val videoWidth: Int = 1152,
-    val videoHeight: Int = 768,
-    val videoNumFrames: Int = 121,
-    val videoFrameRate: Int = 24
+    // Video parameters - uses BuildConfig from local.properties
+    val videoWidth: Int = BuildConfig.AGNES_VIDEO_WIDTH,
+    val videoHeight: Int = BuildConfig.AGNES_VIDEO_HEIGHT,
+    val videoNumFrames: Int = BuildConfig.AGNES_VIDEO_FRAMES,
+    val videoFrameRate: Int = BuildConfig.AGNES_VIDEO_FPS
 )

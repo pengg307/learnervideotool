@@ -3,6 +3,7 @@ package com.aigenerator.app.viewmodel
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.aigenerator.app.BuildConfig
 import com.aigenerator.app.model.AIProvider
 import com.aigenerator.app.model.AppSettings
 import com.aigenerator.app.model.ChatMessage
@@ -192,19 +193,16 @@ class ChatViewModel @Inject constructor(
                 finalResult
             }
             AIProvider.AGNES -> {
-                if (settings.agnesApiKey.isBlank()) {
-                    AIResult.Error("Agnes API key not set. Go to Settings.")
-                } else {
-                    try {
-                        repo.generateImageAgnes(
-                            prompt = prompt,
-                            apiKey = settings.agnesApiKey,
-                            modelName = settings.agnesImageModel,
-                            size = "${settings.defaultImageWidth}x${settings.defaultImageHeight}"
-                        )
-                    } catch (e: Exception) {
-                        AIResult.Error("Agnes API error: ${e.message}")
-                    }
+                val apiKey = settings.agnesApiKey.ifBlank { BuildConfig.AGNES_API_KEY }
+                try {
+                    repo.generateImageAgnes(
+                        prompt = prompt,
+                        apiKey = apiKey,
+                        modelName = settings.agnesImageModel.ifBlank { BuildConfig.AGNES_IMAGE_MODEL },
+                        size = "${settings.defaultImageWidth}x${settings.defaultImageHeight}"
+                    )
+                } catch (e: Exception) {
+                    AIResult.Error("Agnes API error: ${e.message}")
                 }
             }
         }
@@ -239,25 +237,22 @@ class ChatViewModel @Inject constructor(
                 finalResult
             }
             AIProvider.AGNES -> {
-                if (settings.agnesApiKey.isBlank()) {
-                    AIResult.Error("Agnes API key not set. Go to Settings.")
-                } else {
-                    try {
-                        repo.generateVideoAgnes(
-                            prompt = prompt,
-                            apiKey = settings.agnesApiKey,
-                            modelName = settings.agnesVideoModel,
-                            height = settings.videoHeight,
-                            width = settings.videoWidth,
-                            numFrames = settings.videoNumFrames,
-                            frameRate = settings.videoFrameRate,
-                            onProgress = { progress ->
-                                updateLoadingMessage(loadingId, "Creating your video... ($progress%)")
-                            }
-                        )
-                    } catch (e: Exception) {
-                        AIResult.Error("Agnes video error: ${e.message}")
-                    }
+                val apiKey = settings.agnesApiKey.ifBlank { BuildConfig.AGNES_API_KEY }
+                try {
+                    repo.generateVideoAgnes(
+                        prompt = prompt,
+                        apiKey = apiKey,
+                        modelName = settings.agnesVideoModel.ifBlank { BuildConfig.AGNES_VIDEO_MODEL },
+                        height = settings.videoHeight,
+                        width = settings.videoWidth,
+                        numFrames = settings.videoNumFrames,
+                        frameRate = settings.videoFrameRate,
+                        onProgress = { progress ->
+                            updateLoadingMessage(loadingId, "Creating your video... ($progress%)")
+                        }
+                    )
+                } catch (e: Exception) {
+                    AIResult.Error("Agnes video error: ${e.message}")
                 }
             }
         }
