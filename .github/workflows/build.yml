@@ -69,7 +69,7 @@ jobs:
           
           # Upload the APK
           RESPONSE=$(curl -s -X POST "https://api.appetize.io/v1/apps" \
-            -H "Authorization: Bearer ${{ secrets.APPETIZE_TOKEN }}" \
+            -H "X-API-KEY: ${{ secrets.APPETIZE_TOKEN }}" \
             -F "file=@app/build/outputs/apk/debug/app-debug.apk" \
             -F "platform=android")
           
