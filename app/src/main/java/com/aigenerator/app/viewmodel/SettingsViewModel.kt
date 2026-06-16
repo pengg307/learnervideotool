@@ -24,17 +24,4 @@ class SettingsViewModel @Inject constructor(
     fun save(newSettings: AppSettings) {
         viewModelScope.launch { repo.save(newSettings) }
     }
-    
-    // Optional: Helper method to save just the custom endpoint settings
-    fun saveCustomEndpoint(url: String, apiKey: String, modelName: String) {
-        viewModelScope.launch {
-            val current = repo.getSettings()
-            val updated = current.copy(
-                customEndpointUrl = url,
-                customApiKey = apiKey,
-                customModelName = modelName
-            )
-            repo.save(updated)
-        }
-    }
 }
