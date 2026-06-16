@@ -41,11 +41,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.aigenerator.app.R
 import com.aigenerator.app.model.AIProvider
 import com.aigenerator.app.viewmodel.SettingsViewModel
 import kotlinx.coroutines.delay
@@ -71,7 +73,7 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
     ) {
         TopAppBar(
-            title  = { Text("Settings", fontWeight = FontWeight.Bold) },
+            title  = { Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold) },
             colors = TopAppBarDefaults.topAppBarColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer
             )
@@ -83,7 +85,7 @@ fun SettingsScreen(
         ) {
 
             // ============ AI PROVIDER ============
-            SectionTitle("AI Provider")
+            SectionTitle(stringResource(R.string.settings_ai_provider))
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     AIProvider.values().forEach { provider ->
@@ -97,10 +99,10 @@ fun SettingsScreen(
                             )
                             Text(
                                 text = when (provider) {
-                                    AIProvider.OPENAI       -> "OpenAI (DALL-E 3 + GPT-4)"
-                                    AIProvider.STABILITY_AI -> "Stability AI (SDXL)"
-                                    AIProvider.REPLICATE    -> "Replicate (Open models)"
-                                    AIProvider.AGNES        -> "Agnes AI (Image + Video)"
+                                    AIProvider.OPENAI       -> stringResource(R.string.provider_openai)
+                                    AIProvider.STABILITY_AI -> stringResource(R.string.provider_stability)
+                                    AIProvider.REPLICATE    -> stringResource(R.string.provider_replicate)
+                                    AIProvider.AGNES        -> stringResource(R.string.provider_agnes)
                                 }
                             )
                         }
@@ -110,14 +112,14 @@ fun SettingsScreen(
 
             // ============ AGNES SETTINGS ============
             if (s.selectedProvider == AIProvider.AGNES) {
-                SectionTitle("Agnes AI Settings")
+                SectionTitle(stringResource(R.string.settings_agnes))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier            = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         ApiKeyField(
-                            label = "Agnes API Key",
+                            label = stringResource(R.string.agnes_api_key),
                             value = s.agnesApiKey,
                             onValueChange = { s = s.copy(agnesApiKey = it) },
                             visible = showAgnes,
@@ -127,7 +129,7 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value         = s.agnesImageModel,
                             onValueChange = { s = s.copy(agnesImageModel = it) },
-                            label         = { Text("Image Model Name") },
+                            label         = { Text(stringResource(R.string.agnes_image_model)) },
                             placeholder   = { Text("agnes-image-2.0-flash") },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
@@ -136,14 +138,14 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value         = s.agnesVideoModel,
                             onValueChange = { s = s.copy(agnesVideoModel = it) },
-                            label         = { Text("Video Model Name") },
+                            label         = { Text(stringResource(R.string.agnes_video_model)) },
                             placeholder   = { Text("agnes-video-v2.0") },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
                         
                         Text(
-                            text = "Agnes supports text-to-image, image-to-image, and video generation.",
+                            text = stringResource(R.string.agnes_note),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -151,7 +153,7 @@ fun SettingsScreen(
                 }
 
                 // ============ VIDEO PARAMETERS ============
-                SectionTitle("Video Parameters (Agnes)")
+                SectionTitle(stringResource(R.string.settings_video))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier = Modifier.padding(16.dp),
@@ -162,7 +164,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoWidth = it.toIntOrNull() ?: 1152) 
                             },
-                            label = { Text("Video Width") },
+                            label = { Text(stringResource(R.string.video_width)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -171,7 +173,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoHeight = it.toIntOrNull() ?: 768) 
                             },
-                            label = { Text("Video Height") },
+                            label = { Text(stringResource(R.string.video_height)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -180,7 +182,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoNumFrames = it.toIntOrNull() ?: 121) 
                             },
-                            label = { Text("Number of Frames") },
+                            label = { Text(stringResource(R.string.video_frames)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -189,7 +191,7 @@ fun SettingsScreen(
                             onValueChange = { 
                                 s = s.copy(videoFrameRate = it.toIntOrNull() ?: 24) 
                             },
-                            label = { Text("Frame Rate (fps)") },
+                            label = { Text(stringResource(R.string.video_fps)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
@@ -198,29 +200,29 @@ fun SettingsScreen(
             }
 
             // ============ API KEYS ============
-            SectionTitle("API Keys")
+            SectionTitle(stringResource(R.string.settings_api_keys))
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier            = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    ApiKeyField("OpenAI Key (sk-...)",
+                    ApiKeyField(stringResource(R.string.openai_key),
                         s.openAiApiKey,    { s = s.copy(openAiApiKey    = it) },
                         showOAI,  { showOAI  = !showOAI  })
-                    ApiKeyField("Stability AI Key",
+                    ApiKeyField(stringResource(R.string.stability_key),
                         s.stabilityApiKey, { s = s.copy(stabilityApiKey = it) },
                         showStab, { showStab = !showStab })
-                    ApiKeyField("Replicate Key (r8_...)",
+                    ApiKeyField(stringResource(R.string.replicate_key),
                         s.replicateApiKey, { s = s.copy(replicateApiKey = it) },
                         showRep,  { showRep  = !showRep  })
                 }
             }
 
             // ============ IMAGE SETTINGS ============
-            SectionTitle("Image Settings")
+            SectionTitle(stringResource(R.string.settings_image))
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Resolution", style = MaterialTheme.typography.titleSmall)
+                    Text(stringResource(R.string.resolution), style = MaterialTheme.typography.titleSmall)
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         listOf(512 to 512, 768 to 768, 1024 to 1024).forEach { (w, h) ->
                             FilterChip(
@@ -231,7 +233,7 @@ fun SettingsScreen(
                         }
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text("Steps: ${s.defaultSteps}",
+                    Text(stringResource(R.string.steps) + ": ${s.defaultSteps}",
                         style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value         = s.defaultSteps.toFloat(),
@@ -239,7 +241,7 @@ fun SettingsScreen(
                         valueRange    = 10f..50f,
                         steps         = 39
                     )
-                    Text("CFG Scale: ${"%.1f".format(s.defaultCfgScale)}",
+                    Text(stringResource(R.string.cfg_scale) + ": ${"%.1f".format(s.defaultCfgScale)}",
                         style = MaterialTheme.typography.titleSmall)
                     Slider(
                         value         = s.defaultCfgScale,
@@ -252,7 +254,7 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment     = Alignment.CenterVertically
                     ) {
-                        Text("Auto-save to Gallery")
+                        Text(stringResource(R.string.auto_save))
                         Switch(
                             checked         = s.saveToGallery,
                             onCheckedChange = { s = s.copy(saveToGallery = it) }
@@ -263,7 +265,7 @@ fun SettingsScreen(
 
             // ============ REPLICATE SETTINGS ============
             if (s.selectedProvider == AIProvider.REPLICATE) {
-                SectionTitle("Replicate Model Versions")
+                SectionTitle(stringResource(R.string.settings_replicate))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(
                         modifier            = Modifier.padding(16.dp),
@@ -272,14 +274,14 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value         = s.replicateImageVersion,
                             onValueChange = { s = s.copy(replicateImageVersion = it) },
-                            label         = { Text("Image Model Version") },
+                            label         = { Text(stringResource(R.string.replicate_image_ver)) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
                         OutlinedTextField(
                             value         = s.replicateVideoVersion,
                             onValueChange = { s = s.copy(replicateVideoVersion = it) },
-                            label         = { Text("Video Model Version") },
+                            label         = { Text(stringResource(R.string.replicate_video_ver)) },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
@@ -294,7 +296,7 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Default.Save, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Save Settings")
+                Text(stringResource(R.string.save_settings))
             }
 
             if (justSaved) {
@@ -312,18 +314,18 @@ fun SettingsScreen(
                         Icon(Icons.Default.CheckCircle, null,
                             tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Settings saved successfully!")
+                        Text(stringResource(R.string.settings_saved))
                     }
                 }
             }
 
             // ============ ABOUT ============
-            SectionTitle("About")
+            SectionTitle(stringResource(R.string.settings_about))
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    InfoRow("Version",   "1.0.0")
-                    InfoRow("Models",    "DALL-E 3, SDXL, SVD, Agnes Image/Video")
-                    InfoRow("Providers", "OpenAI, Stability AI, Replicate, Agnes AI")
+                    InfoRow(stringResource(R.string.version),   "1.0.0")
+                    InfoRow(stringResource(R.string.models),    "DALL-E 3, SDXL, SVD, Agnes Image/Video")
+                    InfoRow(stringResource(R.string.providers), "OpenAI, Stability AI, Replicate, Agnes AI")
                 }
             }
         }
@@ -361,7 +363,8 @@ fun ApiKeyField(
                 Icon(
                     imageVector        = if (visible) Icons.Default.VisibilityOff
                                          else Icons.Default.Visibility,
-                    contentDescription = if (visible) "Hide" else "Show"
+                    contentDescription = if (visible) stringResource(R.string.hide)
+                                         else stringResource(R.string.show)
                 )
             }
         }

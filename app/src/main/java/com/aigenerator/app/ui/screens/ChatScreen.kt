@@ -76,11 +76,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.aigenerator.app.R
 import com.aigenerator.app.model.GenerationMode
 import com.aigenerator.app.model.Message
 import com.aigenerator.app.model.MessageType
@@ -142,13 +144,13 @@ fun ChatScreen(
         TopAppBar(
             title = {
                 Column {
-                    Text("AI Generator", fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.chat_title), fontWeight = FontWeight.Bold)
                     Text(
                         text = when (state.currentMode) {
-                            GenerationMode.IMAGE          -> "Text to Image"
-                            GenerationMode.VIDEO          -> "Text to Video"
-                            GenerationMode.IMAGE_TO_IMAGE -> "Image to Image"
-                            GenerationMode.IMAGE_TO_VIDEO -> "Image to Video"
+                            GenerationMode.IMAGE          -> stringResource(R.string.chat_subtitle_image)
+                            GenerationMode.VIDEO          -> stringResource(R.string.chat_subtitle_video)
+                            GenerationMode.IMAGE_TO_IMAGE -> stringResource(R.string.chat_subtitle_img2img)
+                            GenerationMode.IMAGE_TO_VIDEO -> stringResource(R.string.chat_subtitle_img2video)
                         },
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary
@@ -157,10 +159,10 @@ fun ChatScreen(
             },
             actions = {
                 IconButton(onClick = { showModes = !showModes }) {
-                    Icon(Icons.Default.Tune, contentDescription = "Mode")
+                    Icon(Icons.Default.Tune, contentDescription = null)
                 }
                 IconButton(onClick = { vm.clearChat() }) {
-                    Icon(Icons.Default.DeleteSweep, contentDescription = "Clear")
+                    Icon(Icons.Default.DeleteSweep, contentDescription = null)
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
@@ -178,10 +180,10 @@ fun ChatScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf(
-                        GenerationMode.IMAGE          to "Image",
-                        GenerationMode.VIDEO          to "Video",
-                        GenerationMode.IMAGE_TO_IMAGE to "Img to Img",
-                        GenerationMode.IMAGE_TO_VIDEO to "Img to Video"
+                        GenerationMode.IMAGE          to stringResource(R.string.mode_image),
+                        GenerationMode.VIDEO          to stringResource(R.string.mode_video),
+                        GenerationMode.IMAGE_TO_IMAGE to stringResource(R.string.mode_img2img),
+                        GenerationMode.IMAGE_TO_VIDEO to stringResource(R.string.mode_img2video)
                     ).forEach { (mode, label) ->
                         FilterChip(
                             selected = state.currentMode == mode,
@@ -207,13 +209,13 @@ fun ChatScreen(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Reference Image",
+                        Text(stringResource(R.string.reference_image),
                             style = MaterialTheme.typography.labelMedium)
-                        Text("Will be used for generation",
+                        Text(stringResource(R.string.reference_image_desc),
                             style = MaterialTheme.typography.labelSmall)
                     }
                     IconButton(onClick = { vm.removeUploadedImage() }) {
-                        Icon(Icons.Default.Close, contentDescription = "Remove")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_image))
                     }
                 }
             }
@@ -243,7 +245,7 @@ fun ChatScreen(
                     IconButton(onClick = { imagePicker.launch("image/*") }) {
                         Icon(
                             Icons.Default.AddPhotoAlternate,
-                            contentDescription = "Upload image",
+                            contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
@@ -254,8 +256,8 @@ fun ChatScreen(
                         modifier      = Modifier.weight(1f).padding(horizontal = 4.dp),
                         placeholder   = {
                             Text(
-                                if (isListening) "Listening..."
-                                else "Describe what you want to generate..."
+                                if (isListening) stringResource(R.string.input_placeholder_listening)
+                                else stringResource(R.string.input_placeholder)
                             )
                         },
                         shape    = RoundedCornerShape(24.dp),
@@ -264,7 +266,7 @@ fun ChatScreen(
                         trailingIcon = {
                             if (inputText.isNotEmpty()) {
                                 IconButton(onClick = { inputText = "" }) {
-                                    Icon(Icons.Default.Clear, contentDescription = "Clear")
+                                    Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.clear_text))
                                 }
                             }
                         }
@@ -287,7 +289,7 @@ fun ChatScreen(
                                             )
                                             putExtra(
                                                 RecognizerIntent.EXTRA_PROMPT,
-                                                "Describe what you want to generate..."
+                                                context.getString(R.string.input_placeholder)
                                             )
                                         }
                                     )
@@ -300,7 +302,7 @@ fun ChatScreen(
                         Icon(
                             imageVector = if (isListening) Icons.Default.MicOff
                                           else Icons.Default.Mic,
-                            contentDescription = "Voice input",
+                            contentDescription = stringResource(R.string.voice_input),
                             tint = if (isListening) MaterialTheme.colorScheme.error
                                    else MaterialTheme.colorScheme.primary
                         )
@@ -328,7 +330,7 @@ fun ChatScreen(
                         } else {
                             Icon(
                                 imageVector        = Icons.Default.Send,
-                                contentDescription = "Send",
+                                contentDescription = stringResource(R.string.send),
                                 tint = if (inputText.isNotBlank()) Color.White
                                        else MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -360,30 +362,26 @@ fun WelcomeCard(mode: GenerationMode) {
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text       = "AI Generator",
+                text       = stringResource(R.string.welcome_title),
                 style      = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text      = when (mode) {
-                    GenerationMode.IMAGE          ->
-                        "Type or speak what image you want, then press Send"
-                    GenerationMode.VIDEO          ->
-                        "Describe a video scene and I will create it for you"
-                    GenerationMode.IMAGE_TO_IMAGE ->
-                        "Upload an image and describe how to transform it"
-                    GenerationMode.IMAGE_TO_VIDEO ->
-                        "Upload an image to animate it into a video"
+                    GenerationMode.IMAGE          -> stringResource(R.string.welcome_image_desc)
+                    GenerationMode.VIDEO          -> stringResource(R.string.welcome_video_desc)
+                    GenerationMode.IMAGE_TO_IMAGE -> stringResource(R.string.welcome_img2img_desc)
+                    GenerationMode.IMAGE_TO_VIDEO -> stringResource(R.string.welcome_img2video_desc)
                 },
                 textAlign = TextAlign.Center,
                 style     = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(16.dp))
             listOf(
-                "A dragon flying over a neon city at night",
-                "Cute cat in astronaut suit on Mars",
-                "Underwater palace with glowing fish"
+                stringResource(R.string.example_1),
+                stringResource(R.string.example_2),
+                stringResource(R.string.example_3)
             ).forEach { example ->
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
@@ -459,7 +457,7 @@ fun ChatBubble(message: Message) {
                                 contentScale       = ContentScale.Crop
                             )
                         }
-                        Text("Reference image", modifier = Modifier.padding(top = 4.dp),
+                        Text(stringResource(R.string.reference_image), modifier = Modifier.padding(top = 4.dp),
                             style = MaterialTheme.typography.labelSmall)
                     }
                 }
@@ -483,7 +481,7 @@ fun ChatBubble(message: Message) {
                         message.mediaUrl?.let { url ->
                             AsyncImage(
                                 model              = url,
-                                contentDescription = "Generated image",
+                                contentDescription = null,
                                 modifier           = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = 320.dp)
@@ -492,7 +490,6 @@ fun ChatBubble(message: Message) {
                             )
                         }
                         Row(modifier = Modifier.padding(top = 4.dp)) {
-                            // Save button - fixed with proper coroutine scope
                             var saveLoading by remember { mutableStateOf(false) }
                             val scope = rememberCoroutineScope()
                             
@@ -512,17 +509,18 @@ fun ChatBubble(message: Message) {
                                                     context.contentResolver,
                                                     bitmap,
                                                     "generated_image_${System.currentTimeMillis()}.jpg",
-                                                    "Saved from AI Generator"
+                                                    context.getString(R.string.app_name)
                                                 )
                                                 
                                                 Toast.makeText(
                                                     context,
-                                                    if (saved != null) "Image saved to gallery!" else "Save failed",
+                                                    if (saved != null) context.getString(R.string.image_saved)
+                                                    else context.getString(R.string.save_failed),
                                                     Toast.LENGTH_SHORT
                                                 ).show()
                                             }
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "Save failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, "${context.getString(R.string.save_failed)}: ${e.message}", Toast.LENGTH_SHORT).show()
                                         } finally {
                                             saveLoading = false
                                         }
@@ -535,7 +533,7 @@ fun ChatBubble(message: Message) {
                                     Icon(Icons.Default.Download, null, Modifier.size(16.dp))
                                 }
                                 Spacer(Modifier.width(4.dp))
-                                Text(if (saveLoading) "Saving..." else "Save")
+                                Text(if (saveLoading) stringResource(R.string.saving) else stringResource(R.string.save))
                             }
                             
                             TextButton(onClick = {
@@ -543,11 +541,11 @@ fun ChatBubble(message: Message) {
                                     type = "text/plain"
                                     putExtra(Intent.EXTRA_TEXT, message.mediaUrl ?: message.content)
                                 }
-                                context.startActivity(Intent.createChooser(shareIntent, "Share via"))
+                                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.share)))
                             }) {
                                 Icon(Icons.Default.Share, null, Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Share")
+                                Text(stringResource(R.string.share))
                             }
                         }
                     }
@@ -559,13 +557,13 @@ fun ChatBubble(message: Message) {
                         Text(message.content, style = MaterialTheme.typography.labelSmall)
                         Spacer(modifier = Modifier.height(4.dp))
                         message.mediaUrl?.let {
-                            Text("Video ready!",
+                            Text(stringResource(R.string.video_ready),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary)
                             TextButton(onClick = { }) {
                                 Icon(Icons.Default.PlayCircle, null, Modifier.size(20.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("Play Video")
+                                Text(stringResource(R.string.play_video))
                             }
                         }
                     }
