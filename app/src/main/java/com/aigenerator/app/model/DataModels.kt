@@ -117,7 +117,7 @@ data class AgnesImageRequest(
     val model: String = "agnes-image-2.0-flash",
     val prompt: String,
     val size: String = "1024x1024",
-    val image: List<String>? = null,        // For image-to-image
+    val image: List<String>? = null,
     val return_base64: Boolean? = null,
     @SerializedName("extra_body")
     val extraBody: ExtraBody? = null
@@ -125,7 +125,7 @@ data class AgnesImageRequest(
 
 data class ExtraBody(
     @SerializedName("response_format")
-    val responseFormat: String? = null      // "url" or "b64_json"
+    val responseFormat: String? = null
 )
 
 data class AgnesImageResponse(
@@ -142,19 +142,24 @@ data class AgnesVideoRequest(
     val prompt: String,
     val height: Int = 768,
     val width: Int = 1152,
-    val num_frames: Int = 121,
-    val frame_rate: Int = 24
+    @SerializedName("num_frames")
+    val numFrames: Int = 121,
+    @SerializedName("frame_rate")
+    val frameRate: Int = 24
 )
 
 data class AgnesVideoResponse(
     val id: String = "",
-    val task_id: String = "",
-    val video_id: String = "",
-    val object: String = "",
+    @SerializedName("task_id")
+    val taskId: String = "",
+    @SerializedName("video_id")
+    val videoId: String = "",
+    val `object`: String = "",
     val model: String = "",
     val status: String = "",
     val progress: Int = 0,
-    val created_at: Long = 0,
+    @SerializedName("created_at")
+    val createdAt: Long = 0,
     val seconds: String = "",
     val size: String = ""
 )
