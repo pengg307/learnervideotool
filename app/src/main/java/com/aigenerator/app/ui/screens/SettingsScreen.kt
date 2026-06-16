@@ -107,7 +107,7 @@ fun SettingsScreen(
                 }
             }
 
-            // Custom Endpoint Settings (shown only when Custom provider is selected)
+            // ============ CUSTOM ENDPOINT SETTINGS ============
             if (s.selectedProvider == AIProvider.CUSTOM) {
                 SectionTitle("Custom Endpoint Settings")
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -118,8 +118,17 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value         = s.customEndpointUrl,
                             onValueChange = { s = s.copy(customEndpointUrl = it) },
-                            label         = { Text("Endpoint URL") },
-                            placeholder   = { Text("https://api.example.com/v1") },
+                            label         = { Text("Image Endpoint URL") },
+                            placeholder   = { Text("https://api.example.com/v1/images/generations") },
+                            modifier      = Modifier.fillMaxWidth(),
+                            singleLine    = true
+                        )
+                        
+                        OutlinedTextField(
+                            value         = s.customVideoEndpointUrl,
+                            onValueChange = { s = s.copy(customVideoEndpointUrl = it) },
+                            label         = { Text("Video Endpoint URL") },
+                            placeholder   = { Text("https://api.ai.com/v1/videos") },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
@@ -136,20 +145,67 @@ fun SettingsScreen(
                             value         = s.customModelName,
                             onValueChange = { s = s.copy(customModelName = it) },
                             label         = { Text("Model Name") },
-                            placeholder   = { Text("e.g., gpt-4, llama-2, sd-xl") },
+                            placeholder   = { Text("e.g., agnes-video-v2.0, sdxl") },
                             modifier      = Modifier.fillMaxWidth(),
                             singleLine    = true
                         )
                         
                         Text(
-                            text = "Note: Custom endpoint must be compatible with OpenAI API format",
+                            text = "Note: Image and Video endpoints can be different. Leave Video URL blank to use Image URL for both.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
+
+                // ============ VIDEO PARAMETERS ============
+                SectionTitle("Video Parameters")
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = s.videoWidth.toString(),
+                            onValueChange = { 
+                                s = s.copy(videoWidth = it.toIntOrNull() ?: 1152) 
+                            },
+                            label = { Text("Video Width") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = s.videoHeight.toString(),
+                            onValueChange = { 
+                                s = s.copy(videoHeight = it.toIntOrNull() ?: 768) 
+                            },
+                            label = { Text("Video Height") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = s.videoNumFrames.toString(),
+                            onValueChange = { 
+                                s = s.copy(videoNumFrames = it.toIntOrNull() ?: 121) 
+                            },
+                            label = { Text("Number of Frames") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                        OutlinedTextField(
+                            value = s.videoFrameRate.toString(),
+                            onValueChange = { 
+                                s = s.copy(videoFrameRate = it.toIntOrNull() ?: 24) 
+                            },
+                            label = { Text("Frame Rate (fps)") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true
+                        )
+                    }
+                }
             }
 
+            // ============ API KEYS ============
             SectionTitle("API Keys")
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
@@ -168,6 +224,7 @@ fun SettingsScreen(
                 }
             }
 
+            // ============ IMAGE SETTINGS ============
             SectionTitle("Image Settings")
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -212,6 +269,7 @@ fun SettingsScreen(
                 }
             }
 
+            // ============ REPLICATE SETTINGS ============
             if (s.selectedProvider == AIProvider.REPLICATE) {
                 SectionTitle("Replicate Model Versions")
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -237,6 +295,7 @@ fun SettingsScreen(
                 }
             }
 
+            // ============ SAVE BUTTON ============
             Button(
                 onClick  = { vm.save(s); justSaved = true },
                 modifier = Modifier.fillMaxWidth()
@@ -266,11 +325,12 @@ fun SettingsScreen(
                 }
             }
 
+            // ============ ABOUT ============
             SectionTitle("About")
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow("Version",   "1.0.0")
-                    InfoRow("Models",    "DALL-E 3, SDXL, SVD")
+                    InfoRow("Models",    "DALL-E 3, SDXL, SVD, Agnes Video")
                     InfoRow("Providers", "OpenAI, Stability AI, Replicate, Custom")
                 }
             }

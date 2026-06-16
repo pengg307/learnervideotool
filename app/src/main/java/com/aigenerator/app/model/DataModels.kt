@@ -15,7 +15,7 @@ enum class GenerationMode {
 }
 
 enum class AIProvider {
-    OPENAI, STABILITY_AI, REPLICATE, CUSTOM  // Added CUSTOM here
+    OPENAI, STABILITY_AI, REPLICATE, CUSTOM
 }
 
 @Entity(tableName = "messages")
@@ -124,14 +124,17 @@ data class AppSettings(
     val saveToGallery: Boolean = true,
     val selectedProvider: AIProvider = AIProvider.OPENAI,
     val replicateImageVersion: String =
-        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294" +
-        "bba72df75aae2bec46e7cb50be2f5b3aecf9",
+        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
     val replicateVideoVersion: String =
-        "stability-ai/stable-video-diffusion:3f0457e4619daac51203" +
-        "dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
-    
-    // === NEW CUSTOM ENDPOINT FIELDS ===
-    val customEndpointUrl: String = "",      // Custom API endpoint URL
-    val customApiKey: String = "",           // API key for custom endpoint
-    val customModelName: String = ""         // Model name for custom endpoint
+        "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
+    // Custom endpoint fields
+    val customEndpointUrl: String = "",              // Image endpoint
+    val customVideoEndpointUrl: String = "",         // Video endpoint
+    val customApiKey: String = "",
+    val customModelName: String = "",
+    // Video generation parameters
+    val videoWidth: Int = 1152,
+    val videoHeight: Int = 768,
+    val videoNumFrames: Int = 121,
+    val videoFrameRate: Int = 24
 )

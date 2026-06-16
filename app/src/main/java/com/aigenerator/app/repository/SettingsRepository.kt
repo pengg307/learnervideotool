@@ -40,11 +40,16 @@ class SettingsRepository @Inject constructor(
         val PROVIDER      = stringPreferencesKey("provider")
         val REP_IMG_VER   = stringPreferencesKey("rep_img_ver")
         val REP_VID_VER   = stringPreferencesKey("rep_vid_ver")
-        
-        // NEW: Custom endpoint keys
+        // Custom endpoint
         val CUSTOM_ENDPOINT_URL = stringPreferencesKey("custom_endpoint_url")
+        val CUSTOM_VIDEO_ENDPOINT_URL = stringPreferencesKey("custom_video_endpoint_url")
         val CUSTOM_API_KEY      = stringPreferencesKey("custom_api_key")
         val CUSTOM_MODEL_NAME   = stringPreferencesKey("custom_model_name")
+        // Video parameters
+        val VIDEO_WIDTH      = intPreferencesKey("video_width")
+        val VIDEO_HEIGHT     = intPreferencesKey("video_height")
+        val VIDEO_NUM_FRAMES = intPreferencesKey("video_num_frames")
+        val VIDEO_FRAME_RATE = intPreferencesKey("video_frame_rate")
     }
 
     val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { prefs ->
@@ -69,11 +74,16 @@ class SettingsRepository @Inject constructor(
                 ?: "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
             replicateVideoVersion = prefs[Keys.REP_VID_VER]
                 ?: "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
-            
-            // NEW: Load custom endpoint settings
+            // Custom
             customEndpointUrl     = prefs[Keys.CUSTOM_ENDPOINT_URL] ?: "",
+            customVideoEndpointUrl = prefs[Keys.CUSTOM_VIDEO_ENDPOINT_URL] ?: "",
             customApiKey          = prefs[Keys.CUSTOM_API_KEY] ?: "",
-            customModelName       = prefs[Keys.CUSTOM_MODEL_NAME] ?: ""
+            customModelName       = prefs[Keys.CUSTOM_MODEL_NAME] ?: "",
+            // Video parameters
+            videoWidth            = prefs[Keys.VIDEO_WIDTH] ?: 1152,
+            videoHeight           = prefs[Keys.VIDEO_HEIGHT] ?: 768,
+            videoNumFrames        = prefs[Keys.VIDEO_NUM_FRAMES] ?: 121,
+            videoFrameRate        = prefs[Keys.VIDEO_FRAME_RATE] ?: 24
         )
     }
 
@@ -95,11 +105,16 @@ class SettingsRepository @Inject constructor(
             prefs[Keys.PROVIDER]    = settings.selectedProvider.name
             prefs[Keys.REP_IMG_VER] = settings.replicateImageVersion
             prefs[Keys.REP_VID_VER] = settings.replicateVideoVersion
-            
-            // NEW: Save custom endpoint settings
+            // Custom
             prefs[Keys.CUSTOM_ENDPOINT_URL] = settings.customEndpointUrl
+            prefs[Keys.CUSTOM_VIDEO_ENDPOINT_URL] = settings.customVideoEndpointUrl
             prefs[Keys.CUSTOM_API_KEY]      = settings.customApiKey
             prefs[Keys.CUSTOM_MODEL_NAME]   = settings.customModelName
+            // Video parameters
+            prefs[Keys.VIDEO_WIDTH]      = settings.videoWidth
+            prefs[Keys.VIDEO_HEIGHT]     = settings.videoHeight
+            prefs[Keys.VIDEO_NUM_FRAMES] = settings.videoNumFrames
+            prefs[Keys.VIDEO_FRAME_RATE] = settings.videoFrameRate
         }
     }
 }

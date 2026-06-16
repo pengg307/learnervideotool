@@ -16,7 +16,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -193,7 +192,6 @@ class ChatViewModel @Inject constructor(
                 finalResult
             }
             AIProvider.CUSTOM -> {
-                // Custom endpoint image generation
                 if (settings.customEndpointUrl.isBlank() || settings.customApiKey.isBlank()) {
                     AIResult.Error("Please configure Custom Endpoint URL and API Key in Settings")
                 } else {
@@ -206,7 +204,8 @@ class ChatViewModel @Inject constructor(
                             width = settings.defaultImageWidth,
                             height = settings.defaultImageHeight,
                             steps = settings.defaultSteps,
-                            cfgScale = settings.defaultCfgScale
+                            cfgScale = settings.defaultCfgScale,
+                            isVideo = false
                         )
                     } catch (e: Exception) {
                         AIResult.Error("Custom endpoint error: ${e.message}")
@@ -224,32 +223,67 @@ class ChatViewModel @Inject constructor(
         addMessage(
             Message(
                 id = loadingId,
-                content = "Creating your video, this can take 2-5 minutes...",
+                content = "Creating your video... (0%)",
                 type = MessageType.LOADING,
                 isLoading = true,
                 sessionId = _state.value.sessionId
             )
         )
 
-        var finalResult: AIResult<String> = AIResult.Error("Not started")
-        
-        when (settings.selectedProvider) {
-            AIProvider.OPENAI, AIProvider.STABILITY_AI, AIProvider.CUSTOM -> {
-                // For video generation, fall back to Replicate or show error
-                // Most custom endpoints don't support video yet
-                finalResult = AIResult.Error("Video generation via custom endpoint not supported. Please use Replicate.")
+        val result = when (settings.selectedProvider) {
+            AIProvider.OPENAI, AIProvider.STABILITY_AI -> {
+                AIResult.Error("Video generation not supported by this provider. Please use Replicate or Custom.")
             }
             AIProvider.REPLICATE -> {
+                var finalResult: AIResult<String> = AIResult.Error("Not started")
                 repo.generateWithReplicate(
                     prompt = prompt,
                     modelVersion = settings.replicateVideoVersion,
                     extraParams = mapOf("num_frames" to 25, "fps" to 8)
                 ).collect { finalResult = it }
+                finalResult
+            }
+            AIProvider.CUSTOM -> {
+                val videoUrl = settings.customVideoEndpointUrl.ifBlank { settings.customEndpointUrl }
+                if (videoUrl.isBlank() || settings.customApiKey.isBlank()) {
+                    AIResult.Error("Please configure Custom Video Endpoint URL and API Key in Settings")
+                } else {
+                    try {
+                        repo.generateVideoCustom(
+                            prompt = prompt,
+                            endpointUrl = videoUrl,
+                            apiKey = settings.customApiKey,
+                            modelName = settings.customModelName,
+                            height = settings.videoHeight,
+                            width = settings.videoWidth,
+                            numFrames = settings.videoNumFrames,
+                            frameRate = settings.videoFrameRate,
+                            onProgress = { progress ->
+                                updateLoadingMessage(loadingId, "Creating your video... ($progress%)")
+                            }
+                        )
+                    } catch (e: Exception) {
+                        AIResult.Error("Custom video endpoint error: ${e.message}")
+                    }
+                }
             }
         }
 
         removeMessage(loadingId)
-        handleGenerationResult(finalResult, isVideo = true)
+        handleGenerationResult(result, isVideo = true)
+    }
+
+    private fun updateLoadingMessage(messageId: String, newContent: String) {
+        _state.update { state ->
+            val updatedMessages = state.messages.map { message ->
+                if (message.id == messageId) {
+                    message.copy(content = newContent)
+                } else {
+                    message
+                }
+            }
+            state.copy(messages = updatedMessages)
+        }
     }
 
     private suspend fun directGenerate(text: String, settings: AppSettings) {
