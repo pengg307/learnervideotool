@@ -55,7 +55,7 @@ class SettingsRepository @Inject constructor(
             openAiApiKey          = prefs[Keys.OPENAI_KEY]  ?: "",
             stabilityApiKey       = prefs[Keys.STAB_KEY]    ?: "",
             replicateApiKey       = prefs[Keys.REP_KEY]     ?: "",
-            agnesApiKey           = prefs[Keys.AGNES_KEY]   ?: "",
+            agnesApiKey           = prefs[Keys.AGNES_KEY]   ?: "sk-8tNOzU2nlPoMGJCG7b1obcEQbDFckNxZTyaamjSUWkpWeOsh",
             agnesImageModel       = prefs[Keys.AGNES_IMG_MODEL] ?: "agnes-image-2.0-flash",
             agnesVideoModel       = prefs[Keys.AGNES_VID_MODEL] ?: "agnes-video-v2.0",
             defaultImageModel     = prefs[Keys.IMG_MODEL]   ?: "dall-e-3",
