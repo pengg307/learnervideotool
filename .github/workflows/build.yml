@@ -61,13 +61,11 @@ jobs:
         if: success()
         run: ls -lh app/build/outputs/apk/debug/app-debug.apk
 
-      # ============ NEW: Upload to Appetize.io using curl ============
       - name: Upload APK to Appetize.io
         if: success()
         run: |
           echo "📤 Uploading APK to Appetize.io..."
           
-          # Upload the APK
           RESPONSE=$(curl -s -X POST "https://api.appetize.io/v1/apps" \
             -H "X-API-KEY: ${{ secrets.APPETIZE_TOKEN }}" \
             -F "file=@app/build/outputs/apk/debug/app-debug.apk" \
@@ -75,20 +73,18 @@ jobs:
           
           echo "📦 Response: $RESPONSE"
           
-          # Extract the public URL from the response
-          PUBLIC_URL=$(echo "$RESPONSE" | grep -o '"publicUrl":"[^"]*"' | cut -d'"' -f4)
-          APP_KEY=$(echo "$RESPONSE" | grep -o '"appKey":"[^"]*"' | cut -d'"' -f4)
+          # Extract the publicURL (correct field name)
+          PUBLIC_URL=$(echo "$RESPONSE" | grep -o '"publicURL":"[^"]*"' | cut -d'"' -f4)
           
           if [ -n "$PUBLIC_URL" ]; then
             echo "✅ Upload successful!"
             echo "=================================================="
             echo "📱 App URL: $PUBLIC_URL"
-            echo "🔑 App Key: $APP_KEY"
             echo "=================================================="
-            # Save URL for later steps
             echo "APPETIZE_URL=$PUBLIC_URL" >> $GITHUB_ENV
           else
-            echo "❌ Upload failed. Response: $RESPONSE"
+            echo "❌ Could not extract publicURL from response"
+            echo "Response was: $RESPONSE"
             exit 1
           fi
 
