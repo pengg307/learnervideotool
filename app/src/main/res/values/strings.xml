@@ -1,4 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- App Name -->
     <string name="app_name">AI Generator</string>
+    
+    <!-- Chat Screen -->
+    <string name="chat_title">AI Generator</string>
+    <string name="chat_subtitle_image">Text to Image</string>
+    <string name="chat_subtitle_video">Text to Video</string>
+    <string name="chat_subtitle_img2img">Image to Image</string>
+    <string name="chat_subtitle_img2video">Image to Video</string>
+    
+    <string name="mode_image">Image</string>
+    <string name="mode_video">Video</string>
+    <string name="mode_img2img">Img to Img</string>
+    <string name="mode_img2video">Img to Video</string>
+    
+    <string name="reference_image">Reference Image</string>
+    <string name="reference_image_desc">Will be used for generation</string>
+    <string name="remove_image">Remove Image</string>
+    
+    <string name="welcome_title">AI Generator</string>
+    <string name="welcome_image_desc">Type or speak what image you want, then press Send</string>
+    <string name="welcome_video_desc">Describe a video scene and I will create it for you</string>
+    <string name="welcome_img2img_desc">Upload an image and describe how to transform it</string>
+    <string name="welcome_img2video_desc">Upload an image to animate it into a video</string>
+    
+    <string name="example_1">A dragon flying over a neon city at night</string>
+    <string name="example_2">Cute cat in astronaut suit on Mars</string>
+    <string name="example_3">Underwater palace with glowing fish</string>
+    
+    <string name="input_placeholder">Describe what you want to generate…</string>
+    <string name="input_placeholder_listening">Listening…</string>
+    
+    <string name="clear_text">Clear</string>
+    <string name="voice_input">Voice input</string>
+    <string name="send">Send</string>
+    
+    <string name="thinking">Thinking…</string>
+    <string name="generating_image">Creating your image…</string>
+    <string name="generating_video">Creating your video, this can take 2-5 minutes…</string>
+    <string name="image_ready">Your image is ready!</string>
+    <string name="video_ready">Your video is ready!</string>
+    
+    <string name="save">Save</string>
+    <string name="saving">Saving…</string>
+    <string name="share">Share</string>
+    <string name="play_video">Play Video</string>
+    
+    <string name="image_saved">Image saved to gallery!</string>
+    <string name="save_failed">Save failed</string>
+    
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    
+    <string name="settings_ai_provider">AI Provider</string>
+    <string name="provider_openai">OpenAI (DALL-E 3 + GPT-4)</string>
+    <string name="provider_stability">Stability AI (SDXL)</string>
+    <string name="provider_replicate">Replicate (Open models)</string>
+    <string name="provider_agnes">Agnes AI (Image + Video)</string>
+    
+    <string name="settings_agnes">Agnes AI Settings</string>
+    <string name="agnes_api_key">Agnes API Key</string>
+    <string name="agnes_image_model">Image Model Name</string>
+    <string name="agnes_video_model">Video Model Name</string>
+    <string name="agnes_note">Agnes supports text-to-image, image-to-image, and video generation.</string>
+    
+    <string name="settings_api_keys">API Keys</string>
+    <string name="openai_key">OpenAI Key (sk-…)</string>
+    <string name="stability_key">Stability AI Key</string>
+    <string name="replicate_key">Replicate Key (r8_…)</string>
+    
+    <string name="settings_image">Image Settings</string>
+    <string name="resolution">Resolution</string>
+    <string name="steps">Steps</string>
+    <string name="cfg_scale">CFG Scale</string>
+    <string name="auto_save">Auto-save to Gallery</string>
+    
+    <string name="settings_video">Video Parameters (Agnes)</string>
+    <string name="video_width">Video Width</string>
+    <string name="video_height">Video Height</string>
+    <string name="video_frames">Number of Frames</string>
+    <string name="video_fps">Frame Rate (fps)</string>
+    
+    <string name="settings_replicate">Replicate Model Versions</string>
+    <string name="replicate_image_ver">Image Model Version</string>
+    <string name="replicate_video_ver">Video Model Version</string>
+    
+    <string name="save_settings">Save Settings</string>
+    <string name="settings_saved">Settings saved successfully!</string>
+    
+    <string name="settings_about">About</string>
+    <string name="version">Version</string>
+    <string name="models">Models</string>
+    <string name="providers">Providers</string>
+    
+    <!-- Common -->
+    <string name="hide">Hide</string>
+    <string name="show">Show</string>
+    <string name="error">Error</string>
+    <string name="retry">Retry</string>
+    
+    <!-- Generation failed messages -->
+    <string name="error_api_key_missing">API key not set. Go to Settings.</string>
+    <string name="error_network">Network error</string>
+    <string name="error_generation_failed">Generation failed</string>
+    <string name="error_custom_endpoint">Please configure Custom Endpoint URL and API Key</string>
+    <string name="error_video_not_supported">Video generation not supported by this provider. Please use Replicate or Agnes.</string>
+    <string name="error_agnes_key_missing">Agnes API key not set. Go to Settings.</string>
+    <string name="error_agnes_video">Agnes video generation failed</string>
+    <string name="error_upload_image">Please upload a reference image first</string>
 </resources>
