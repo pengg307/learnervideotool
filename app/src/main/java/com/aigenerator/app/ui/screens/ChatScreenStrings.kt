@@ -1,3 +1,37 @@
+package com.aigenerator.app.ui.screens
+
+import com.aigenerator.app.model.GenerationMode
+import java.util.Locale
+
+data class ChatScreenStrings(
+    val chatTitle: String,
+    val chatSubtitle: String,
+    val modeImage: String,
+    val modeVideo: String,
+    val modeImg2Img: String,
+    val modeImg2Video: String,
+    val referenceImage: String,
+    val referenceImageDesc: String,
+    val removeImage: String,
+    val welcomeTitle: String,
+    val welcomeDesc: String,
+    val example1: String,
+    val example2: String,
+    val example3: String,
+    val inputPlaceholder: String,
+    val inputPlaceholderListening: String,
+    val clearText: String,
+    val voiceInput: String,
+    val send: String,
+    val save: String,
+    val saving: String,
+    val share: String,
+    val playVideo: String,
+    val imageSaved: String,
+    val saveFailed: String,
+    val videoReady: String
+)
+
 fun getChatScreenStrings(mode: GenerationMode): ChatScreenStrings {
     val isChinese = Locale.getDefault().language == "zh"
     
