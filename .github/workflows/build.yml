@@ -60,3 +60,22 @@ jobs:
       - name: Show APK info
         if: success()
         run: ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+      # ============ NEW: Upload to Appetize.io for browser testing ============
+      - name: Upload APK to Appetize.io
+        if: success()
+        uses: ychescale9/action-appetize@v1
+        with:
+          app-path: app/build/outputs/apk/debug/app-debug.apk
+          token: ${{ secrets.APPETIZE_TOKEN }}
+          public: true
+          # Optional: specify device (default is pixel4)
+          # device: pixel4
+
+      - name: Display Appetize.io Link
+        if: success()
+        run: |
+          echo "=================================================="
+          echo "📱 Your app is ready to test in your browser!"
+          echo "🔗 Click the link above or check the previous step for the URL"
+          echo "=================================================="
