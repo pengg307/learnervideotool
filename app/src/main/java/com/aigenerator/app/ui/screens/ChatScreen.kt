@@ -99,12 +99,12 @@ fun ChatScreen(
     paddingValues: PaddingValues,
     vm: ChatViewModel = hiltViewModel()
 ) {
-    val context   = LocalContext.current
-    val state     by vm.state.collectAsState()
+    val context = LocalContext.current
+    val state by vm.state.collectAsState()
     val listState = rememberLazyListState()
     var inputText by remember { mutableStateOf("") }
     var isListening by remember { mutableStateOf(false) }
-    var showModes   by remember { mutableStateOf(false) }
+    var showModes by remember { mutableStateOf(false) }
 
     val audioPermission = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
 
@@ -147,8 +147,8 @@ fun ChatScreen(
                     Text(stringResource(R.string.chat_title), fontWeight = FontWeight.Bold)
                     Text(
                         text = when (state.currentMode) {
-                            GenerationMode.IMAGE          -> stringResource(R.string.chat_subtitle_image)
-                            GenerationMode.VIDEO          -> stringResource(R.string.chat_subtitle_video)
+                            GenerationMode.IMAGE -> stringResource(R.string.chat_subtitle_image)
+                            GenerationMode.VIDEO -> stringResource(R.string.chat_subtitle_video)
                             GenerationMode.IMAGE_TO_IMAGE -> stringResource(R.string.chat_subtitle_img2img)
                             GenerationMode.IMAGE_TO_VIDEO -> stringResource(R.string.chat_subtitle_img2video)
                         },
@@ -179,16 +179,17 @@ fun ChatScreen(
                         .padding(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf(
-                        GenerationMode.IMAGE          to stringResource(R.string.mode_image),
-                        GenerationMode.VIDEO          to stringResource(R.string.mode_video),
+                    val modeLabels = listOf(
+                        GenerationMode.IMAGE to stringResource(R.string.mode_image),
+                        GenerationMode.VIDEO to stringResource(R.string.mode_video),
                         GenerationMode.IMAGE_TO_IMAGE to stringResource(R.string.mode_img2img),
                         GenerationMode.IMAGE_TO_VIDEO to stringResource(R.string.mode_img2video)
-                    ).forEach { (mode, label) ->
+                    )
+                    modeLabels.forEach { (mode, label) ->
                         FilterChip(
                             selected = state.currentMode == mode,
-                            onClick  = { vm.setMode(mode); showModes = false },
-                            label    = { Text(label) }
+                            onClick = { vm.setMode(mode); showModes = false },
+                            label = { Text(label) }
                         )
                     }
                 }
@@ -202,17 +203,21 @@ fun ChatScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AsyncImage(
-                        model              = state.uploadedImageUri,
+                        model = state.uploadedImageUri,
                         contentDescription = null,
-                        modifier           = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
-                        contentScale       = ContentScale.Crop
+                        modifier = Modifier.size(56.dp).clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Crop
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.reference_image),
-                            style = MaterialTheme.typography.labelMedium)
-                        Text(stringResource(R.string.reference_image_desc),
-                            style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            stringResource(R.string.reference_image),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Text(
+                            stringResource(R.string.reference_image_desc),
+                            style = MaterialTheme.typography.labelSmall
+                        )
                     }
                     IconButton(onClick = { vm.removeUploadedImage() }) {
                         Icon(Icons.Default.Close, contentDescription = stringResource(R.string.remove_image))
@@ -222,9 +227,9 @@ fun ChatScreen(
         }
 
         LazyColumn(
-            state               = listState,
-            modifier            = Modifier.weight(1f).fillMaxWidth(),
-            contentPadding      = PaddingValues(16.dp),
+            state = listState,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (state.messages.isEmpty()) {
@@ -239,8 +244,8 @@ fun ChatScreen(
             Column {
                 HorizontalDivider()
                 Row(
-                    modifier            = Modifier.fillMaxWidth().padding(8.dp),
-                    verticalAlignment   = Alignment.Bottom
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    verticalAlignment = Alignment.Bottom
                 ) {
                     IconButton(onClick = { imagePicker.launch("image/*") }) {
                         Icon(
@@ -251,18 +256,18 @@ fun ChatScreen(
                     }
 
                     OutlinedTextField(
-                        value         = inputText,
+                        value = inputText,
                         onValueChange = { inputText = it },
-                        modifier      = Modifier.weight(1f).padding(horizontal = 4.dp),
-                        placeholder   = {
+                        modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                        placeholder = {
                             Text(
                                 if (isListening) stringResource(R.string.input_placeholder_listening)
                                 else stringResource(R.string.input_placeholder)
                             )
                         },
-                        shape    = RoundedCornerShape(24.dp),
+                        shape = RoundedCornerShape(24.dp),
                         maxLines = 4,
-                        enabled  = !state.isGenerating && !isListening,
+                        enabled = !state.isGenerating && !isListening,
                         trailingIcon = {
                             if (inputText.isNotEmpty()) {
                                 IconButton(onClick = { inputText = "" }) {
@@ -300,11 +305,10 @@ fun ChatScreen(
                         }
                     ) {
                         Icon(
-                            imageVector = if (isListening) Icons.Default.MicOff
-                                          else Icons.Default.Mic,
+                            imageVector = if (isListening) Icons.Default.MicOff else Icons.Default.Mic,
                             contentDescription = stringResource(R.string.voice_input),
                             tint = if (isListening) MaterialTheme.colorScheme.error
-                                   else MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.primary
                         )
                     }
 
@@ -315,7 +319,7 @@ fun ChatScreen(
                                 inputText = ""
                             }
                         },
-                        modifier       = Modifier.size(48.dp),
+                        modifier = Modifier.size(48.dp),
                         containerColor = if (!state.isGenerating && inputText.isNotBlank())
                             MaterialTheme.colorScheme.primary
                         else
@@ -323,16 +327,16 @@ fun ChatScreen(
                     ) {
                         if (state.isGenerating) {
                             CircularProgressIndicator(
-                                modifier    = Modifier.size(24.dp),
+                                modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp,
-                                color       = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         } else {
                             Icon(
-                                imageVector        = Icons.Default.Send,
+                                imageVector = Icons.Default.Send,
                                 contentDescription = stringResource(R.string.send),
                                 tint = if (inputText.isNotBlank()) Color.White
-                                       else MaterialTheme.colorScheme.onSurfaceVariant
+                                else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -346,52 +350,53 @@ fun ChatScreen(
 fun WelcomeCard(mode: GenerationMode) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors   = CardDefaults.cardColors(
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
         Column(
-            modifier                = Modifier.padding(24.dp),
-            horizontalAlignment     = Alignment.CenterHorizontally
+            modifier = Modifier.padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(
-                imageVector        = Icons.Default.AutoAwesome,
+                imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
-                modifier           = Modifier.size(56.dp),
-                tint               = MaterialTheme.colorScheme.primary
+                modifier = Modifier.size(56.dp),
+                tint = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text       = stringResource(R.string.welcome_title),
-                style      = MaterialTheme.typography.headlineSmall,
+                text = stringResource(R.string.welcome_title),
+                style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text      = when (mode) {
-                    GenerationMode.IMAGE          -> stringResource(R.string.welcome_image_desc)
-                    GenerationMode.VIDEO          -> stringResource(R.string.welcome_video_desc)
+                text = when (mode) {
+                    GenerationMode.IMAGE -> stringResource(R.string.welcome_image_desc)
+                    GenerationMode.VIDEO -> stringResource(R.string.welcome_video_desc)
                     GenerationMode.IMAGE_TO_IMAGE -> stringResource(R.string.welcome_img2img_desc)
                     GenerationMode.IMAGE_TO_VIDEO -> stringResource(R.string.welcome_img2video_desc)
                 },
                 textAlign = TextAlign.Center,
-                style     = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium
             )
             Spacer(modifier = Modifier.height(16.dp))
-            listOf(
+            val examples = listOf(
                 stringResource(R.string.example_1),
                 stringResource(R.string.example_2),
                 stringResource(R.string.example_3)
-            ).forEach { example ->
+            )
+            examples.forEach { example ->
                 Surface(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
-                    shape    = RoundedCornerShape(8.dp),
-                    color    = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
                 ) {
                     Text(
-                        text     = example,
+                        text = example,
                         modifier = Modifier.padding(10.dp, 6.dp),
-                        style    = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
@@ -407,14 +412,15 @@ fun ChatBubble(message: Message) {
         MessageType.USER_IMAGE
     )
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     Row(
-        modifier              = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
         if (!isUser) {
             Box(
-                modifier        = Modifier.size(32.dp).clip(CircleShape)
+                modifier = Modifier.size(32.dp).clip(CircleShape)
                     .background(MaterialTheme.colorScheme.secondary),
                 contentAlignment = Alignment.Center
             ) {
@@ -426,13 +432,13 @@ fun ChatBubble(message: Message) {
         when (message.type) {
             MessageType.USER_TEXT, MessageType.USER_VOICE ->
                 Card(
-                    shape  = RoundedCornerShape(18.dp, 4.dp, 18.dp, 18.dp),
+                    shape = RoundedCornerShape(18.dp, 4.dp, 18.dp, 18.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
                     Row(
-                        modifier         = Modifier.padding(12.dp, 8.dp),
+                        modifier = Modifier.padding(12.dp, 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         if (message.type == MessageType.USER_VOICE) {
@@ -450,21 +456,24 @@ fun ChatBubble(message: Message) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         message.localMediaPath?.let { path ->
                             AsyncImage(
-                                model              = path,
+                                model = path,
                                 contentDescription = null,
-                                modifier           = Modifier.size(180.dp)
+                                modifier = Modifier.size(180.dp)
                                     .clip(RoundedCornerShape(10.dp)),
-                                contentScale       = ContentScale.Crop
+                                contentScale = ContentScale.Crop
                             )
                         }
-                        Text(stringResource(R.string.reference_image), modifier = Modifier.padding(top = 4.dp),
-                            style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            stringResource(R.string.reference_image),
+                            modifier = Modifier.padding(top = 4.dp),
+                            style = MaterialTheme.typography.labelSmall
+                        )
                     }
                 }
 
             MessageType.AI_TEXT ->
                 Card(
-                    shape  = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
+                    shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
@@ -476,23 +485,24 @@ fun ChatBubble(message: Message) {
             MessageType.AI_IMAGE ->
                 Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
                     Column(modifier = Modifier.padding(8.dp)) {
-                        Text(message.content, modifier = Modifier.padding(bottom = 4.dp),
-                            style = MaterialTheme.typography.labelSmall)
+                        Text(
+                            message.content,
+                            modifier = Modifier.padding(bottom = 4.dp),
+                            style = MaterialTheme.typography.labelSmall
+                        )
                         message.mediaUrl?.let { url ->
                             AsyncImage(
-                                model              = url,
-                                contentDescription = null,
-                                modifier           = Modifier
+                                model = url,
+                                contentDescription = "Generated image",
+                                modifier = Modifier
                                     .fillMaxWidth()
                                     .heightIn(max = 320.dp)
                                     .clip(RoundedCornerShape(10.dp)),
-                                contentScale       = ContentScale.FillWidth
+                                contentScale = ContentScale.FillWidth
                             )
                         }
                         Row(modifier = Modifier.padding(top = 4.dp)) {
                             var saveLoading by remember { mutableStateOf(false) }
-                            val scope = rememberCoroutineScope()
-                            
                             TextButton(
                                 onClick = {
                                     if (saveLoading) return@TextButton
@@ -504,14 +514,14 @@ fun ChatBubble(message: Message) {
                                                 connection.connect()
                                                 val inputStream = connection.getInputStream()
                                                 val bitmap = BitmapFactory.decodeStream(inputStream)
-                                                
+
                                                 val saved = android.provider.MediaStore.Images.Media.insertImage(
                                                     context.contentResolver,
                                                     bitmap,
                                                     "generated_image_${System.currentTimeMillis()}.jpg",
                                                     context.getString(R.string.app_name)
                                                 )
-                                                
+
                                                 Toast.makeText(
                                                     context,
                                                     if (saved != null) context.getString(R.string.image_saved)
@@ -520,7 +530,11 @@ fun ChatBubble(message: Message) {
                                                 ).show()
                                             }
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "${context.getString(R.string.save_failed)}: ${e.message}", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(
+                                                context,
+                                                "${context.getString(R.string.save_failed)}: ${e.message}",
+                                                Toast.LENGTH_SHORT
+                                            ).show()
                                         } finally {
                                             saveLoading = false
                                         }
@@ -535,7 +549,7 @@ fun ChatBubble(message: Message) {
                                 Spacer(Modifier.width(4.dp))
                                 Text(if (saveLoading) stringResource(R.string.saving) else stringResource(R.string.save))
                             }
-                            
+
                             TextButton(onClick = {
                                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
@@ -557,9 +571,11 @@ fun ChatBubble(message: Message) {
                         Text(message.content, style = MaterialTheme.typography.labelSmall)
                         Spacer(modifier = Modifier.height(4.dp))
                         message.mediaUrl?.let {
-                            Text(stringResource(R.string.video_ready),
+                            Text(
+                                stringResource(R.string.video_ready),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary)
+                                color = MaterialTheme.colorScheme.primary
+                            )
                             TextButton(onClick = { }) {
                                 Icon(Icons.Default.PlayCircle, null, Modifier.size(20.dp))
                                 Spacer(Modifier.width(4.dp))
@@ -571,13 +587,15 @@ fun ChatBubble(message: Message) {
 
             MessageType.LOADING ->
                 Card(
-                    shape  = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
+                    shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant
                     )
                 ) {
-                    Row(modifier = Modifier.padding(16.dp, 12.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.padding(16.dp, 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
                         Spacer(Modifier.width(10.dp))
                         Text(message.content, style = MaterialTheme.typography.bodySmall)
@@ -586,13 +604,15 @@ fun ChatBubble(message: Message) {
 
             MessageType.ERROR ->
                 Card(
-                    shape  = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
+                    shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
-                    Row(modifier = Modifier.padding(12.dp, 8.dp),
-                        verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.padding(12.dp, 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         Icon(Icons.Default.Error, null, Modifier.size(16.dp),
                             MaterialTheme.colorScheme.error)
                         Spacer(Modifier.width(6.dp))
@@ -603,18 +623,18 @@ fun ChatBubble(message: Message) {
 
             MessageType.SYSTEM ->
                 Text(
-                    text      = message.content,
-                    modifier  = Modifier.fillMaxWidth().padding(4.dp),
-                    style     = MaterialTheme.typography.labelSmall,
+                    text = message.content,
+                    modifier = Modifier.fillMaxWidth().padding(4.dp),
+                    style = MaterialTheme.typography.labelSmall,
                     textAlign = TextAlign.Center,
-                    color     = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
         }
 
         if (isUser) {
             Spacer(modifier = Modifier.width(6.dp))
             Box(
-                modifier         = Modifier.size(32.dp).clip(CircleShape)
+                modifier = Modifier.size(32.dp).clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
