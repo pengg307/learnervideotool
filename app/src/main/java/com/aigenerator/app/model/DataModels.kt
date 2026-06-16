@@ -2,6 +2,7 @@ package com.aigenerator.app.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 import java.util.UUID
 
 enum class MessageType {
@@ -15,7 +16,7 @@ enum class GenerationMode {
 }
 
 enum class AIProvider {
-    OPENAI, STABILITY_AI, REPLICATE
+    OPENAI, STABILITY_AI, REPLICATE, AGNES
 }
 
 @Entity(tableName = "messages")
@@ -110,10 +111,73 @@ data class ReplicateResponse(
     val error: String? = null
 )
 
+// ============ AGNES API MODELS ============
+
+data class AgnesImageRequest(
+    val model: String = "agnes-image-2.0-flash",
+    val prompt: String,
+    val size: String = "1024x1024",
+    val image: List<String>? = null,
+    val return_base64: Boolean? = null,
+    @SerializedName("extra_body")
+    val extraBody: ExtraBody? = null
+)
+
+data class ExtraBody(
+    @SerializedName("response_format")
+    val responseFormat: String? = null
+)
+
+data class AgnesImageResponse(
+    val data: List<AgnesImageData> = emptyList()
+)
+
+data class AgnesImageData(
+    val url: String? = null,
+    val b64_json: String? = null
+)
+
+data class AgnesVideoRequest(
+    val model: String = "agnes-video-v2.0",
+    val prompt: String,
+    val height: Int = 768,
+    val width: Int = 1152,
+    @SerializedName("num_frames")
+    val numFrames: Int = 121,
+    @SerializedName("frame_rate")
+    val frameRate: Int = 24
+)
+
+data class AgnesVideoResponse(
+    val id: String = "",
+    @SerializedName("task_id")
+    val taskId: String = "",
+    @SerializedName("video_id")
+    val videoId: String = "",
+    val `object`: String = "",
+    val model: String = "",
+    val status: String = "",
+    val progress: Int = 0,
+    @SerializedName("created_at")
+    val createdAt: Long = 0,
+    val seconds: String = "",
+    val size: String = ""
+)
+
+// ============ APP SETTINGS ============
+
 data class AppSettings(
+    // OpenAI
     val openAiApiKey: String = "",
+    // Stability AI
     val stabilityApiKey: String = "",
+    // Replicate
     val replicateApiKey: String = "",
+    // Agnes AI
+    val agnesApiKey: String = "",
+    val agnesImageModel: String = "agnes-image-2.0-flash",
+    val agnesVideoModel: String = "agnes-video-v2.0",
+    // Image settings
     val defaultImageModel: String = "dall-e-3",
     val defaultVideoModel: String = "stable-video-diffusion",
     val defaultImageWidth: Int = 1024,
@@ -123,10 +187,14 @@ data class AppSettings(
     val enableNegativePrompt: Boolean = true,
     val saveToGallery: Boolean = true,
     val selectedProvider: AIProvider = AIProvider.OPENAI,
+    // Replicate versions
     val replicateImageVersion: String =
-        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294" +
-        "bba72df75aae2bec46e7cb50be2f5b3aecf9",
+        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
     val replicateVideoVersion: String =
-        "stability-ai/stable-video-diffusion:3f0457e4619daac51203" +
-        "dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438"
+        "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
+    // Video parameters
+    val videoWidth: Int = 1152,
+    val videoHeight: Int = 768,
+    val videoNumFrames: Int = 121,
+    val videoFrameRate: Int = 24
 )
