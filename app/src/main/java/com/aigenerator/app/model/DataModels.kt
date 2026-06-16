@@ -2,9 +2,19 @@ package com.aigenerator.app.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.aigenerator.app.BuildConfig
 import com.google.gson.annotations.SerializedName
 import java.util.UUID
+
+// Use a separate object for default values to avoid BuildConfig issues
+object Defaults {
+    const val AGNES_API_KEY = ""
+    const val AGNES_IMAGE_MODEL = "agnes-image-2.0-flash"
+    const val AGNES_VIDEO_MODEL = "agnes-video-v2.0"
+    const val AGNES_VIDEO_WIDTH = 1152
+    const val AGNES_VIDEO_HEIGHT = 768
+    const val AGNES_VIDEO_FRAMES = 121
+    const val AGNES_VIDEO_FPS = 24
+}
 
 enum class MessageType {
     USER_TEXT, USER_VOICE, USER_IMAGE,
@@ -115,7 +125,7 @@ data class ReplicateResponse(
 // ============ AGNES API MODELS ============
 
 data class AgnesImageRequest(
-    val model: String = BuildConfig.AGNES_IMAGE_MODEL,
+    val model: String = Defaults.AGNES_IMAGE_MODEL,
     val prompt: String,
     val size: String = "1024x1024",
     val image: List<String>? = null,
@@ -139,14 +149,14 @@ data class AgnesImageData(
 )
 
 data class AgnesVideoRequest(
-    val model: String = BuildConfig.AGNES_VIDEO_MODEL,
+    val model: String = Defaults.AGNES_VIDEO_MODEL,
     val prompt: String,
-    val height: Int = BuildConfig.AGNES_VIDEO_HEIGHT,
-    val width: Int = BuildConfig.AGNES_VIDEO_WIDTH,
+    val height: Int = Defaults.AGNES_VIDEO_HEIGHT,
+    val width: Int = Defaults.AGNES_VIDEO_WIDTH,
     @SerializedName("num_frames")
-    val numFrames: Int = BuildConfig.AGNES_VIDEO_FRAMES,
+    val numFrames: Int = Defaults.AGNES_VIDEO_FRAMES,
     @SerializedName("frame_rate")
-    val frameRate: Int = BuildConfig.AGNES_VIDEO_FPS
+    val frameRate: Int = Defaults.AGNES_VIDEO_FPS
 )
 
 data class AgnesVideoResponse(
@@ -174,10 +184,10 @@ data class AppSettings(
     val stabilityApiKey: String = "",
     // Replicate
     val replicateApiKey: String = "",
-    // Agnes AI - Uses BuildConfig from local.properties
-    val agnesApiKey: String = BuildConfig.AGNES_API_KEY,
-    val agnesImageModel: String = BuildConfig.AGNES_IMAGE_MODEL,
-    val agnesVideoModel: String = BuildConfig.AGNES_VIDEO_MODEL,
+    // Agnes AI
+    val agnesApiKey: String = Defaults.AGNES_API_KEY,
+    val agnesImageModel: String = Defaults.AGNES_IMAGE_MODEL,
+    val agnesVideoModel: String = Defaults.AGNES_VIDEO_MODEL,
     // Image settings
     val defaultImageModel: String = "dall-e-3",
     val defaultVideoModel: String = "stable-video-diffusion",
@@ -193,9 +203,9 @@ data class AppSettings(
         "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
     val replicateVideoVersion: String =
         "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
-    // Video parameters - uses BuildConfig from local.properties
-    val videoWidth: Int = BuildConfig.AGNES_VIDEO_WIDTH,
-    val videoHeight: Int = BuildConfig.AGNES_VIDEO_HEIGHT,
-    val videoNumFrames: Int = BuildConfig.AGNES_VIDEO_FRAMES,
-    val videoFrameRate: Int = BuildConfig.AGNES_VIDEO_FPS
+    // Video parameters
+    val videoWidth: Int = Defaults.AGNES_VIDEO_WIDTH,
+    val videoHeight: Int = Defaults.AGNES_VIDEO_HEIGHT,
+    val videoNumFrames: Int = Defaults.AGNES_VIDEO_FRAMES,
+    val videoFrameRate: Int = Defaults.AGNES_VIDEO_FPS
 )

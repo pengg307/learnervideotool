@@ -3,10 +3,10 @@ package com.aigenerator.app.viewmodel
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.aigenerator.app.BuildConfig
 import com.aigenerator.app.model.AIProvider
 import com.aigenerator.app.model.AppSettings
 import com.aigenerator.app.model.ChatMessage
+import com.aigenerator.app.model.Defaults
 import com.aigenerator.app.model.GenerationMode
 import com.aigenerator.app.model.Message
 import com.aigenerator.app.model.MessageType
@@ -193,12 +193,12 @@ class ChatViewModel @Inject constructor(
                 finalResult
             }
             AIProvider.AGNES -> {
-                val apiKey = settings.agnesApiKey.ifBlank { BuildConfig.AGNES_API_KEY }
+                val apiKey = settings.agnesApiKey.ifBlank { Defaults.AGNES_API_KEY }
                 try {
                     repo.generateImageAgnes(
                         prompt = prompt,
                         apiKey = apiKey,
-                        modelName = settings.agnesImageModel.ifBlank { BuildConfig.AGNES_IMAGE_MODEL },
+                        modelName = settings.agnesImageModel.ifBlank { Defaults.AGNES_IMAGE_MODEL },
                         size = "${settings.defaultImageWidth}x${settings.defaultImageHeight}"
                     )
                 } catch (e: Exception) {
@@ -237,12 +237,12 @@ class ChatViewModel @Inject constructor(
                 finalResult
             }
             AIProvider.AGNES -> {
-                val apiKey = settings.agnesApiKey.ifBlank { BuildConfig.AGNES_API_KEY }
+                val apiKey = settings.agnesApiKey.ifBlank { Defaults.AGNES_API_KEY }
                 try {
                     repo.generateVideoAgnes(
                         prompt = prompt,
                         apiKey = apiKey,
-                        modelName = settings.agnesVideoModel.ifBlank { BuildConfig.AGNES_VIDEO_MODEL },
+                        modelName = settings.agnesVideoModel.ifBlank { Defaults.AGNES_VIDEO_MODEL },
                         height = settings.videoHeight,
                         width = settings.videoWidth,
                         numFrames = settings.videoNumFrames,

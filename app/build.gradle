@@ -29,18 +29,18 @@ android {
         def agnesApiKey = localProperties.getProperty("agnes.api.key", "")
         def agnesImageModel = localProperties.getProperty("agnes.image.model", "agnes-image-2.0-flash")
         def agnesVideoModel = localProperties.getProperty("agnes.video.model", "agnes-video-v2.0")
-        def agnesVideoWidth = localProperties.getProperty("agnes.video.width", "1152").toInteger()
-        def agnesVideoHeight = localProperties.getProperty("agnes.video.height", "768").toInteger()
-        def agnesVideoFrames = localProperties.getProperty("agnes.video.frames", "121").toInteger()
-        def agnesVideoFps = localProperties.getProperty("agnes.video.fps", "24").toInteger()
+        def agnesVideoWidth = localProperties.getProperty("agnes.video.width", "1152")
+        def agnesVideoHeight = localProperties.getProperty("agnes.video.height", "768")
+        def agnesVideoFrames = localProperties.getProperty("agnes.video.frames", "121")
+        def agnesVideoFps = localProperties.getProperty("agnes.video.fps", "24")
         
         buildConfigField "String", "AGNES_API_KEY", "\"$agnesApiKey\""
         buildConfigField "String", "AGNES_IMAGE_MODEL", "\"$agnesImageModel\""
         buildConfigField "String", "AGNES_VIDEO_MODEL", "\"$agnesVideoModel\""
-        buildConfigField "Int", "AGNES_VIDEO_WIDTH", "$agnesVideoWidth"
-        buildConfigField "Int", "AGNES_VIDEO_HEIGHT", "$agnesVideoHeight"
-        buildConfigField "Int", "AGNES_VIDEO_FRAMES", "$agnesVideoFrames"
-        buildConfigField "Int", "AGNES_VIDEO_FPS", "$agnesVideoFps"
+        buildConfigField "int", "AGNES_VIDEO_WIDTH", "$agnesVideoWidth"
+        buildConfigField "int", "AGNES_VIDEO_HEIGHT", "$agnesVideoHeight"
+        buildConfigField "int", "AGNES_VIDEO_FRAMES", "$agnesVideoFrames"
+        buildConfigField "int", "AGNES_VIDEO_FPS", "$agnesVideoFps"
     }
 
     buildFeatures {
