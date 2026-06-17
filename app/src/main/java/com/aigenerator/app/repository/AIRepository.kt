@@ -25,7 +25,7 @@ import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import javax.swing.JOptionPane.showMessageDialog
+import javax.inject.Singleton
 
 sealed class AIResult<out T> {
     data class Success<T>(val data: T) : AIResult<T>()
