@@ -67,7 +67,7 @@ class SettingsRepository @Inject constructor(
             enableNegativePrompt  = prefs[Keys.NEG]         ?: true,
             saveToGallery         = prefs[Keys.SAVE]        ?: true,
             selectedProvider      = try {
-                AIProvider.valueOf(prefs[Keys.PROVIDER] ?: "OPENAI")
+                AIProvider.valueOf(prefs[Keys.PROVIDER] ?: "AGNES")
             } catch (e: Exception) {
                 AIProvider.OPENAI
             },
