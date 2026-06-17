@@ -283,6 +283,7 @@ class AIRepository @Inject constructor(
                             var videoUrl = statusJson.optString("video_url", "")
                                 .ifBlank { statusJson.optString("url", "") }
                                 .ifBlank { statusJson.optString("output", "") }
+                                .ifBlank { statusJson.optString("remixedfromvideoid", "") }
                                 .ifBlank { statusJson.optJSONObject("result")?.optString("url", "") ?: "" }
                                 .ifBlank { statusJson.optJSONObject("data")?.optString("url", "") ?: "" }
                             
