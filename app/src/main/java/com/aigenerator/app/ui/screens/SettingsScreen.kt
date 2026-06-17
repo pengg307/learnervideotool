@@ -61,8 +61,6 @@ fun SettingsScreen(
     val savedSettings by vm.settings.collectAsState()
     var s             by remember(savedSettings) { mutableStateOf(savedSettings) }
     var showOAI       by remember { mutableStateOf(false) }
-    var showStab      by remember { mutableStateOf(false) }
-    var showRep       by remember { mutableStateOf(false) }
     var showAgnes     by remember { mutableStateOf(false) }
     var justSaved     by remember { mutableStateOf(false) }
 
@@ -100,8 +98,6 @@ fun SettingsScreen(
                             Text(
                                 text = when (provider) {
                                     AIProvider.OPENAI       -> stringResource(R.string.provider_openai)
-                                    AIProvider.STABILITY_AI -> stringResource(R.string.provider_stability)
-                                    AIProvider.REPLICATE    -> stringResource(R.string.provider_replicate)
                                     AIProvider.AGNES        -> stringResource(R.string.provider_agnes)
                                 }
                             )
@@ -209,12 +205,6 @@ fun SettingsScreen(
                     ApiKeyField(stringResource(R.string.openai_key),
                         s.openAiApiKey,    { s = s.copy(openAiApiKey    = it) },
                         showOAI,  { showOAI  = !showOAI  })
-                    ApiKeyField(stringResource(R.string.stability_key),
-                        s.stabilityApiKey, { s = s.copy(stabilityApiKey = it) },
-                        showStab, { showStab = !showStab })
-                    ApiKeyField(stringResource(R.string.replicate_key),
-                        s.replicateApiKey, { s = s.copy(replicateApiKey = it) },
-                        showRep,  { showRep  = !showRep  })
                 }
             }
 
@@ -233,22 +223,6 @@ fun SettingsScreen(
                         }
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    Text(stringResource(R.string.steps) + ": ${s.defaultSteps}",
-                        style = MaterialTheme.typography.titleSmall)
-                    Slider(
-                        value         = s.defaultSteps.toFloat(),
-                        onValueChange = { s = s.copy(defaultSteps = it.toInt()) },
-                        valueRange    = 10f..50f,
-                        steps         = 39
-                    )
-                    Text(stringResource(R.string.cfg_scale) + ": ${"%.1f".format(s.defaultCfgScale)}",
-                        style = MaterialTheme.typography.titleSmall)
-                    Slider(
-                        value         = s.defaultCfgScale,
-                        onValueChange = { s = s.copy(defaultCfgScale = it) },
-                        valueRange    = 1f..20f
-                    )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     Row(
                         modifier              = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -258,32 +232,6 @@ fun SettingsScreen(
                         Switch(
                             checked         = s.saveToGallery,
                             onCheckedChange = { s = s.copy(saveToGallery = it) }
-                        )
-                    }
-                }
-            }
-
-            // ============ REPLICATE SETTINGS ============
-            if (s.selectedProvider == AIProvider.REPLICATE) {
-                SectionTitle(stringResource(R.string.settings_replicate))
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier            = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value         = s.replicateImageVersion,
-                            onValueChange = { s = s.copy(replicateImageVersion = it) },
-                            label         = { Text(stringResource(R.string.replicate_image_ver)) },
-                            modifier      = Modifier.fillMaxWidth(),
-                            singleLine    = true
-                        )
-                        OutlinedTextField(
-                            value         = s.replicateVideoVersion,
-                            onValueChange = { s = s.copy(replicateVideoVersion = it) },
-                            label         = { Text(stringResource(R.string.replicate_video_ver)) },
-                            modifier      = Modifier.fillMaxWidth(),
-                            singleLine    = true
                         )
                     }
                 }
@@ -324,8 +272,8 @@ fun SettingsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow(stringResource(R.string.version),   "1.0.0")
-                    InfoRow(stringResource(R.string.models),    "DALL-E 3, SDXL, SVD, Agnes Image/Video")
-                    InfoRow(stringResource(R.string.providers), "OpenAI, Stability AI, Replicate, Agnes AI")
+                    InfoRow(stringResource(R.string.models),    "DALL-E 3, Agnes Image/Video")
+                    InfoRow(stringResource(R.string.providers), "OpenAI, Agnes AI")
                 }
             }
         }

@@ -42,41 +42,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @Named("stability")
-    fun provideStabilityRetrofit(client: OkHttpClient): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://api.stability.ai/v1/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    @Named("replicate")
-    fun provideReplicateRetrofit(client: OkHttpClient): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://api.replicate.com/v1/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-
-    @Provides
-    @Singleton
     fun provideOpenAIService(@Named("openai") retrofit: Retrofit): OpenAIApiService {
         return retrofit.create(OpenAIApiService::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideStabilityService(@Named("stability") retrofit: Retrofit): StabilityApiService {
-        return retrofit.create(StabilityApiService::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideReplicateService(@Named("replicate") retrofit: Retrofit): ReplicateApiService {
-        return retrofit.create(ReplicateApiService::class.java)
     }
 }

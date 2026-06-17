@@ -16,7 +16,7 @@ enum class GenerationMode {
 }
 
 enum class AIProvider {
-    OPENAI, STABILITY_AI, REPLICATE, AGNES
+    OPENAI, AGNES
 }
 
 @Entity(tableName = "messages")
@@ -54,25 +54,6 @@ data class ChatRequest(
     val max_tokens: Int = 500
 )
 
-data class StabilityTextToImageBody(
-    val text_prompts: List<StabilityTextPrompt>,
-    val cfg_scale: Float = 7.0f,
-    val width: Int = 1024,
-    val height: Int = 1024,
-    val steps: Int = 30,
-    val samples: Int = 1
-)
-
-data class StabilityTextPrompt(
-    val text: String,
-    val weight: Float = 1.0f
-)
-
-data class ReplicateRequest(
-    val version: String,
-    val input: Map<String, Any>
-)
-
 data class OpenAIImageResponse(
     val created: Long = 0,
     val data: List<ImageData> = emptyList()
@@ -94,22 +75,7 @@ data class Choice(
     val finish_reason: String = ""
 )
 
-data class StabilityImageResponse(
-    val artifacts: List<Artifact> = emptyList()
-)
 
-data class Artifact(
-    val base64: String = "",
-    val seed: Long = 0,
-    val finishReason: String = ""
-)
-
-data class ReplicateResponse(
-    val id: String = "",
-    val status: String = "",
-    val output: Any? = null,
-    val error: String? = null
-)
 
 // ============ AGNES API MODELS ============
 
@@ -169,29 +135,17 @@ data class AgnesVideoResponse(
 data class AppSettings(
     // OpenAI
     val openAiApiKey: String = "",
-    // Stability AI
-    val stabilityApiKey: String = "",
-    // Replicate
-    val replicateApiKey: String = "",
     // Agnes AI
     val agnesApiKey: String = "",
     val agnesImageModel: String = "agnes-image-2.0-flash",
     val agnesVideoModel: String = "agnes-video-v2.0",
     // Image settings
     val defaultImageModel: String = "dall-e-3",
-    val defaultVideoModel: String = "stable-video-diffusion",
     val defaultImageWidth: Int = 1024,
     val defaultImageHeight: Int = 1024,
-    val defaultSteps: Int = 30,
-    val defaultCfgScale: Float = 7.0f,
     val enableNegativePrompt: Boolean = true,
     val saveToGallery: Boolean = true,
     val selectedProvider: AIProvider = AIProvider.OPENAI,
-    // Replicate versions
-    val replicateImageVersion: String =
-        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
-    val replicateVideoVersion: String =
-        "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
     // Video parameters
     val videoWidth: Int = 1152,
     val videoHeight: Int = 768,
