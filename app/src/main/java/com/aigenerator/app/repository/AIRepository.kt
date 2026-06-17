@@ -55,6 +55,7 @@ class AIRepository @Inject constructor(
         size: String = "1024x1024"
     ): AIResult<String> = withContext(Dispatchers.IO) {
         try {
+            android.util.Log.d("AIRepository", "generateImageAgnes key=${apiKey.take(10)}...")
             val settings = settingsRepo.getSettings()
             if (settings.openAiApiKey.isBlank()) {
                 return@withContext AIResult.Error("OpenAI API key not set. Go to Settings.")
@@ -110,6 +111,7 @@ class AIRepository @Inject constructor(
         engineId: String = "stable-diffusion-xl-1024-v1-0"
     ): AIResult<String> = withContext(Dispatchers.IO) {
         try {
+            android.util.Log.d("AIRepository", "generateImageAgnes key=${apiKey.take(10)}...")
             val settings = settingsRepo.getSettings()
             if (settings.stabilityApiKey.isBlank()) {
                 return@withContext AIResult.Error("Stability AI key not set. Go to Settings.")
@@ -237,6 +239,7 @@ class AIRepository @Inject constructor(
         responseFormat: String = "url"
     ): AIResult<String> = withContext(Dispatchers.IO) {
         try {
+            android.util.Log.d("AIRepository", "generateImageAgnes key=${apiKey.take(10)}...")
             if (apiKey.isBlank()) {
                 return@withContext AIResult.Error("Agnes API key not set. Go to Settings.")
             }
@@ -323,6 +326,7 @@ class AIRepository @Inject constructor(
         onProgress: ((Int) -> Unit)? = null
     ): AIResult<String> = withContext(Dispatchers.IO) {
         try {
+            android.util.Log.d("AIRepository", "generateImageAgnes key=${apiKey.take(10)}...")
             if (apiKey.isBlank()) {
                 return@withContext AIResult.Error("Agnes API key not set. Go to Settings.")
             }
