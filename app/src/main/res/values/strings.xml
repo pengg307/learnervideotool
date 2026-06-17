@@ -55,8 +55,6 @@
     
     <string name="settings_ai_provider">AI Provider</string>
     <string name="provider_openai">OpenAI (DALL-E 3 + GPT-4)</string>
-    <string name="provider_stability">Stability AI (SDXL)</string>
-    <string name="provider_replicate">Replicate (Open models)</string>
     <string name="provider_agnes">Agnes AI (Image + Video)</string>
     
     <string name="settings_agnes">Agnes AI Settings</string>
@@ -67,8 +65,6 @@
     
     <string name="settings_api_keys">API Keys</string>
     <string name="openai_key">OpenAI Key (sk-…)</string>
-    <string name="stability_key">Stability AI Key</string>
-    <string name="replicate_key">Replicate Key (r8_…)</string>
     
     <string name="settings_image">Image Settings</string>
     <string name="resolution">Resolution</string>
@@ -82,9 +78,6 @@
     <string name="video_frames">Number of Frames</string>
     <string name="video_fps">Frame Rate (fps)</string>
     
-    <string name="settings_replicate">Replicate Model Versions</string>
-    <string name="replicate_image_ver">Image Model Version</string>
-    <string name="replicate_video_ver">Video Model Version</string>
     
     <string name="save_settings">Save Settings</string>
     <string name="settings_saved">Settings saved successfully!</string>
@@ -105,7 +98,6 @@
     <string name="error_network">Network error</string>
     <string name="error_generation_failed">Generation failed</string>
     <string name="error_custom_endpoint">Please configure Custom Endpoint URL and API Key</string>
-    <string name="error_video_not_supported">Video generation not supported by this provider. Please use Replicate or Agnes.</string>
     <string name="error_agnes_key_missing">Agnes API key not set. Go to Settings.</string>
     <string name="error_agnes_video">Agnes video generation failed</string>
     <string name="error_upload_image">Please upload a reference image first</string>
