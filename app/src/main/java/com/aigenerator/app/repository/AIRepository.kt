@@ -10,12 +10,7 @@ import com.aigenerator.app.model.ChatMessage
 import com.aigenerator.app.model.ChatRequest
 import com.aigenerator.app.model.Message
 import com.aigenerator.app.model.OpenAIImageRequest
-import com.aigenerator.app.model.ReplicateRequest
-import com.aigenerator.app.model.StabilityTextPrompt
-import com.aigenerator.app.model.StabilityTextToImageBody
 import com.aigenerator.app.network.OpenAIApiService
-import com.aigenerator.app.network.ReplicateApiService
-import com.aigenerator.app.network.StabilityApiService
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -41,9 +36,7 @@ sealed class AIResult<out T> {
 @Singleton
 class AIRepository @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val openAI: OpenAIApiService,
-    private val stability: StabilityApiService,
-    private val replicate: ReplicateApiService,
+    private val openAI: OpenAIApiService
     private val settingsRepo: SettingsRepository,
     private val dao: MessageDao
 ) {
@@ -97,23 +90,6 @@ class AIRepository @Inject constructor(
                 AIResult.Error("Network error: ${e.message}")
             }
         }
-
-    // ============ STABILITY AI ============
-
-    suspend fun generateImageStability(
-        prompt: String,
-        negativePrompt: String = "",
-        width: Int = 1024,
-        height: Int = 1024,
-        steps: Int = 30,
-        cfgScale: Float = 7.0f,
-        engineId: String = "stable-diffusion-xl-1024-v1-0"
-    ): AIResult<String> = withContext(Dispatchers.IO) {
-        try {
-            val settings = settingsRepo.getSettings()
-            if (settings.stabilityApiKey.isBlank()) {
-                return@withContext AIResult.Error("Stability AI key not set. Go to Settings.")
-            }
             val prompts = mutableListOf(StabilityTextPrompt(prompt, 1.0f))
             if (negativePrompt.isNotBlank()) {
                 prompts.add(StabilityTextPrompt(negativePrompt, -1.0f))

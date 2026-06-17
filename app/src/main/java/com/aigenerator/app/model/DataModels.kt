@@ -16,7 +16,7 @@ enum class GenerationMode {
 }
 
 enum class AIProvider {
-    OPENAI, STABILITY_AI, REPLICATE, AGNES
+    OPENAI, AGNES
 }
 
 @Entity(tableName = "messages")
@@ -119,8 +119,6 @@ data class AgnesImageRequest(
     val size: String = "1024x1024",
     val image: List<String>? = null,
     val return_base64: Boolean? = null,
-    @SerializedName("extra_body")
-    val extraBody: ExtraBody? = null
 )
 
 data class ExtraBody(
@@ -169,10 +167,6 @@ data class AgnesVideoResponse(
 data class AppSettings(
     // OpenAI
     val openAiApiKey: String = "",
-    // Stability AI
-    val stabilityApiKey: String = "",
-    // Replicate
-    val replicateApiKey: String = "",
     // Agnes AI
     val agnesApiKey: String = "",
     val agnesImageModel: String = "agnes-image-2.0-flash",
@@ -187,11 +181,6 @@ data class AppSettings(
     val enableNegativePrompt: Boolean = true,
     val saveToGallery: Boolean = true,
     val selectedProvider: AIProvider = AIProvider.OPENAI,
-    // Replicate versions
-    val replicateImageVersion: String =
-        "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
-    val replicateVideoVersion: String =
-        "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
     // Video parameters
     val videoWidth: Int = 1152,
     val videoHeight: Int = 768,

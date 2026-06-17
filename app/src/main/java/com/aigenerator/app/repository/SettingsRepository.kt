@@ -27,8 +27,6 @@ class SettingsRepository @Inject constructor(
 ) {
     private object Keys {
         val OPENAI_KEY    = stringPreferencesKey("openai_key")
-        val STAB_KEY      = stringPreferencesKey("stability_key")
-        val REP_KEY       = stringPreferencesKey("replicate_key")
         val AGNES_KEY     = stringPreferencesKey("agnes_key")
         val AGNES_IMG_MODEL = stringPreferencesKey("agnes_img_model")
         val AGNES_VID_MODEL = stringPreferencesKey("agnes_vid_model")
@@ -53,8 +51,6 @@ class SettingsRepository @Inject constructor(
     val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { prefs ->
         AppSettings(
             openAiApiKey          = prefs[Keys.OPENAI_KEY]  ?: "",
-            stabilityApiKey       = prefs[Keys.STAB_KEY]    ?: "",
-            replicateApiKey       = prefs[Keys.REP_KEY]     ?: "",
             agnesApiKey           = prefs[Keys.AGNES_KEY]   ?: "",
             agnesImageModel       = prefs[Keys.AGNES_IMG_MODEL] ?: "agnes-image-2.0-flash",
             agnesVideoModel       = prefs[Keys.AGNES_VID_MODEL] ?: "agnes-video-v2.0",
@@ -71,10 +67,6 @@ class SettingsRepository @Inject constructor(
             } catch (e: Exception) {
                 AIProvider.OPENAI
             },
-            replicateImageVersion = prefs[Keys.REP_IMG_VER]
-                ?: "stability-ai/sdxl:39ed52f2319f9637e7e26c44e294bba72df75aae2bec46e7cb50be2f5b3aecf9",
-            replicateVideoVersion = prefs[Keys.REP_VID_VER]
-                ?: "stability-ai/stable-video-diffusion:3f0457e4619daac51203dedb472816fd4af51f3149fa7a9e0b5ffcf1b8172438",
             videoWidth            = prefs[Keys.VIDEO_WIDTH] ?: 1152,
             videoHeight           = prefs[Keys.VIDEO_HEIGHT] ?: 768,
             videoNumFrames        = prefs[Keys.VIDEO_NUM_FRAMES] ?: 121,
@@ -87,8 +79,6 @@ class SettingsRepository @Inject constructor(
     suspend fun save(settings: AppSettings) {
         context.dataStore.edit { prefs ->
             prefs[Keys.OPENAI_KEY]    = settings.openAiApiKey
-            prefs[Keys.STAB_KEY]      = settings.stabilityApiKey
-            prefs[Keys.REP_KEY]       = settings.replicateApiKey
             prefs[Keys.AGNES_KEY]     = settings.agnesApiKey
             prefs[Keys.AGNES_IMG_MODEL] = settings.agnesImageModel
             prefs[Keys.AGNES_VID_MODEL] = settings.agnesVideoModel
@@ -101,8 +91,6 @@ class SettingsRepository @Inject constructor(
             prefs[Keys.NEG]           = settings.enableNegativePrompt
             prefs[Keys.SAVE]          = settings.saveToGallery
             prefs[Keys.PROVIDER]      = settings.selectedProvider.name
-            prefs[Keys.REP_IMG_VER]   = settings.replicateImageVersion
-            prefs[Keys.REP_VID_VER]   = settings.replicateVideoVersion
             // Video parameters
             prefs[Keys.VIDEO_WIDTH]      = settings.videoWidth
             prefs[Keys.VIDEO_HEIGHT]     = settings.videoHeight

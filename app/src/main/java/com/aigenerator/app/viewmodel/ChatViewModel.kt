@@ -171,24 +171,6 @@ class ChatViewModel @Inject constructor(
 
         val result = when (settings.selectedProvider) {
             AIProvider.OPENAI -> repo.generateImageOpenAI(prompt)
-            AIProvider.STABILITY_AI -> repo.generateImageStability(
-                prompt = prompt,
-                width = settings.defaultImageWidth,
-                height = settings.defaultImageHeight,
-                steps = settings.defaultSteps,
-                cfgScale = settings.defaultCfgScale
-            )
-            AIProvider.REPLICATE -> {
-                var finalResult: AIResult<String> = AIResult.Error("Not started")
-                repo.generateWithReplicate(
-                    prompt = prompt,
-                    modelVersion = settings.replicateImageVersion,
-                    extraParams = mapOf(
-                        "width" to settings.defaultImageWidth,
-                        "height" to settings.defaultImageHeight,
-                        "num_inference_steps" to settings.defaultSteps
-                    )
-                ).collect { finalResult = it }
                 finalResult
             }
             AIProvider.AGNES -> {
@@ -226,16 +208,7 @@ class ChatViewModel @Inject constructor(
         )
 
         val result = when (settings.selectedProvider) {
-            AIProvider.OPENAI, AIProvider.STABILITY_AI -> {
-                AIResult.Error("Video generation not supported by this provider. Please use Replicate or Agnes.")
-            }
-            AIProvider.REPLICATE -> {
-                var finalResult: AIResult<String> = AIResult.Error("Not started")
-                repo.generateWithReplicate(
-                    prompt = prompt,
-                    modelVersion = settings.replicateVideoVersion,
-                    extraParams = mapOf("num_frames" to 25, "fps" to 8)
-                ).collect { finalResult = it }
+            AIProvider.OPENAI,
                 finalResult
             }
             AIProvider.AGNES -> {

@@ -100,8 +100,6 @@ fun SettingsScreen(
                             Text(
                                 text = when (provider) {
                                     AIProvider.OPENAI       -> stringResource(R.string.provider_openai)
-                                    AIProvider.STABILITY_AI -> stringResource(R.string.provider_stability)
-                                    AIProvider.REPLICATE    -> stringResource(R.string.provider_replicate)
                                     AIProvider.AGNES        -> stringResource(R.string.provider_agnes)
                                 }
                             )
@@ -264,28 +262,6 @@ fun SettingsScreen(
             }
 
             // ============ REPLICATE SETTINGS ============
-            if (s.selectedProvider == AIProvider.REPLICATE) {
-                SectionTitle(stringResource(R.string.settings_replicate))
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier            = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value         = s.replicateImageVersion,
-                            onValueChange = { s = s.copy(replicateImageVersion = it) },
-                            label         = { Text(stringResource(R.string.replicate_image_ver)) },
-                            modifier      = Modifier.fillMaxWidth(),
-                            singleLine    = true
-                        )
-                        OutlinedTextField(
-                            value         = s.replicateVideoVersion,
-                            onValueChange = { s = s.copy(replicateVideoVersion = it) },
-                            label         = { Text(stringResource(R.string.replicate_video_ver)) },
-                            modifier      = Modifier.fillMaxWidth(),
-                            singleLine    = true
-                        )
-                    }
                 }
             }
 
@@ -325,7 +301,7 @@ fun SettingsScreen(
                 Column(modifier = Modifier.padding(16.dp)) {
                     InfoRow(stringResource(R.string.version),   "1.0.0")
                     InfoRow(stringResource(R.string.models),    "DALL-E 3, SDXL, SVD, Agnes Image/Video")
-                    InfoRow(stringResource(R.string.providers), "OpenAI, Stability AI, Replicate, Agnes AI")
+                    InfoRow(stringResource(R.string.providers), "OpenAI, Agnes AI")
                 }
             }
         }

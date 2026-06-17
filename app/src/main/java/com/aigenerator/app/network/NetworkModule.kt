@@ -42,25 +42,9 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    @Named("stability")
-    fun provideStabilityRetrofit(client: OkHttpClient): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://api.stability.ai/v1/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
 
     @Provides
     @Singleton
-    @Named("replicate")
-    fun provideReplicateRetrofit(client: OkHttpClient): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl("https://api.replicate.com/v1/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
 
     @Provides
     @Singleton
