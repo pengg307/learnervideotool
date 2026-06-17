@@ -500,24 +500,34 @@ fun ChatBubble(message: Message) {
                                     scope.launch {
                                         try {
                                             message.mediaUrl?.let { imageUrl ->
-                                                val connection = java.net.URL(imageUrl).openConnection()
+                                                val connection = java.net.URL(imageUrl).openConnection() as java.net.HttpURLConnection
+                                                connection.connectTimeout = 15000
+                                                connection.readTimeout = 15000
+                                                connection.requestMethod = "GET"
                                                 connection.connect()
-                                                val inputStream = connection.getInputStream()
+                                                
+                                                val inputStream = connection.inputStream
                                                 val bitmap = BitmapFactory.decodeStream(inputStream)
+                                                inputStream.close()
+                                                connection.disconnect()
                                                 
-                                                val saved = android.provider.MediaStore.Images.Media.insertImage(
-                                                    context.contentResolver,
-                                                    bitmap,
-                                                    "generated_image_${System.currentTimeMillis()}.jpg",
-                                                    context.getString(R.string.app_name)
-                                                )
-                                                
-                                                Toast.makeText(
-                                                    context,
-                                                    if (saved != null) context.getString(R.string.image_saved)
-                                                    else context.getString(R.string.save_failed),
-                                                    Toast.LENGTH_SHORT
-                                                ).show()
+                                                if (bitmap != null) {
+                                                    val saved = android.provider.MediaStore.Images.Media.insertImage(
+                                                        context.contentResolver,
+                                                        bitmap,
+                                                        "generated_image_${System.currentTimeMillis()}.jpg",
+                                                        context.getString(R.string.app_name)
+                                                    )
+                                                    
+                                                    Toast.makeText(
+                                                        context,
+                                                        if (saved != null) context.getString(R.string.image_saved)
+                                                        else context.getString(R.string.save_failed),
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                } else {
+                                                    Toast.makeText(context, "${context.getString(R.string.save_failed)}: Failed to decode image", Toast.LENGTH_SHORT).show()
+                                                }
                                             }
                                         } catch (e: Exception) {
                                             Toast.makeText(context, "${context.getString(R.string.save_failed)}: ${e.message}", Toast.LENGTH_SHORT).show()
