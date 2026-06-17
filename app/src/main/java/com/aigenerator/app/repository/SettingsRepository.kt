@@ -1,101 +1,61 @@
 package com.aigenerator.app.repository
 
-import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
-import com.aigenerator.app.model.AIProvider
-import com.aigenerator.app.model.AppSettings
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
-import javax.inject.Singleton
 
-private val Context.dataStore: DataStore<Preferences>
-    by preferencesDataStore(name = "ai_settings")
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-@Singleton
-class SettingsRepository @Inject constructor(
-    @ApplicationContext private val context: Context
+data class AppSettings(
+    val openAiApiKey: String = "",
+    val agnesApiKey: String = "",
+    val agnesImageModel: String = "agnes-image-2.0-flash",
+    val agnesVideoModel: String = "agnes-video-v2.0",
+    val defaultImageModel: String = "dall-e-3",
+    val defaultImageWidth: Int = 1024,
+    val defaultImageHeight: Int = 1024,
+    val selectedProvider: String = "OPENAI",
+    val saveToGallery: Boolean = true
 ) {
-    private object Keys {
-        val OPENAI_KEY    = stringPreferencesKey("openai_key")
-        val AGNES_KEY     = stringPreferencesKey("agnes_key")
-        val AGNES_IMG_MODEL = stringPreferencesKey("agnes_img_model")
-        val AGNES_VID_MODEL = stringPreferencesKey("agnes_vid_model")
-        val IMG_MODEL     = stringPreferencesKey("image_model")
-        val VID_MODEL     = stringPreferencesKey("video_model")
-        val IMG_W         = intPreferencesKey("img_width")
-        val IMG_H         = intPreferencesKey("img_height")
-        val STEPS         = intPreferencesKey("steps")
-        val CFG           = floatPreferencesKey("cfg_scale")
-        val NEG           = booleanPreferencesKey("neg_prompt")
-        val SAVE          = booleanPreferencesKey("save_gallery")
-        val PROVIDER      = stringPreferencesKey("provider")
-        val REP_IMG_VER   = stringPreferencesKey("rep_img_ver")
-        val REP_VID_VER   = stringPreferencesKey("rep_vid_ver")
-        // Video parameters
-        val VIDEO_WIDTH      = intPreferencesKey("video_width")
-        val VIDEO_HEIGHT     = intPreferencesKey("video_height")
-        val VIDEO_NUM_FRAMES = intPreferencesKey("video_num_frames")
-        val VIDEO_FRAME_RATE = intPreferencesKey("video_frame_rate")
+    companion object {
+        fun fromPrefs(prefs: Preferences): AppSettings {
+            val openAiKey = prefs[stringPreferencesKey("openai_api_key")] ?: ""
+            val agnesKey = prefs[stringPreferencesKey("agnes_api_key")] ?: ""
+            val agnesImgModel = prefs[stringPreferencesKey("agnes_image_model")] ?: "agnes-image-2.0-flash"
+            val agnesVidModel = prefs[stringPreferencesKey("agnes_video_model")] ?: "agnes-video-v2.0"
+            val defaultModel = prefs[stringPreferencesKey("default_image_model")] ?: "dall-e-3"
+            val width = prefs[stringPreferencesKey("default_image_width")]?.toIntOrNull() ?: 1024
+            val height = prefs[stringPreferencesKey("default_image_height")]?.toIntOrNull() ?: 1024
+            val provider = prefs[stringPreferencesKey("selected_provider")] ?: "OPENAI"
+            val saveGallery = prefs[booleanPreferencesKey("save_to_gallery")] ?: true
+            return AppSettings(openAiKey, agnesKey, agnesImgModel, agnesVidModel, defaultModel, width, height, provider, saveGallery)
+        }
     }
+}
 
-    val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { prefs ->
-        AppSettings(
-            openAiApiKey          = prefs[Keys.OPENAI_KEY]  ?: "",
-            agnesApiKey           = prefs[Keys.AGNES_KEY]   ?: "",
-            agnesImageModel       = prefs[Keys.AGNES_IMG_MODEL] ?: "agnes-image-2.0-flash",
-            agnesVideoModel       = prefs[Keys.AGNES_VID_MODEL] ?: "agnes-video-v2.0",
-            defaultImageModel     = prefs[Keys.IMG_MODEL]   ?: "dall-e-3",
-            defaultVideoModel     = prefs[Keys.VID_MODEL]   ?: "stable-video-diffusion",
-            defaultImageWidth     = prefs[Keys.IMG_W]       ?: 1024,
-            defaultImageHeight    = prefs[Keys.IMG_H]       ?: 1024,
-            defaultSteps          = prefs[Keys.STEPS]       ?: 30,
-            defaultCfgScale       = prefs[Keys.CFG]         ?: 7.0f,
-            enableNegativePrompt  = prefs[Keys.NEG]         ?: true,
-            saveToGallery         = prefs[Keys.SAVE]        ?: true,
-            selectedProvider      = try {
-                AIProvider.valueOf(prefs[Keys.PROVIDER] ?: "OPENAI")
-            } catch (e: Exception) {
-                AIProvider.OPENAI
-            },
-            videoWidth            = prefs[Keys.VIDEO_WIDTH] ?: 1152,
-            videoHeight           = prefs[Keys.VIDEO_HEIGHT] ?: 768,
-            videoNumFrames        = prefs[Keys.VIDEO_NUM_FRAMES] ?: 121,
-            videoFrameRate        = prefs[Keys.VIDEO_FRAME_RATE] ?: 24
-        )
+class SettingsRepository @Inject constructor(private val dataStore: DataStore<Preferences>) {
+
+    val settingsFlow: Flow<AppSettings> = dataStore.data.map { prefs ->
+        AppSettings.fromPrefs(prefs)
     }
-
-    suspend fun getSettings(): AppSettings = settingsFlow.first()
 
     suspend fun save(settings: AppSettings) {
-        context.dataStore.edit { prefs ->
-            prefs[Keys.OPENAI_KEY]    = settings.openAiApiKey
-            prefs[Keys.AGNES_KEY]     = settings.agnesApiKey
-            prefs[Keys.AGNES_IMG_MODEL] = settings.agnesImageModel
-            prefs[Keys.AGNES_VID_MODEL] = settings.agnesVideoModel
-            prefs[Keys.IMG_MODEL]     = settings.defaultImageModel
-            prefs[Keys.VID_MODEL]     = settings.defaultVideoModel
-            prefs[Keys.IMG_W]         = settings.defaultImageWidth
-            prefs[Keys.IMG_H]         = settings.defaultImageHeight
-            prefs[Keys.STEPS]         = settings.defaultSteps
-            prefs[Keys.CFG]           = settings.defaultCfgScale
-            prefs[Keys.NEG]           = settings.enableNegativePrompt
-            prefs[Keys.SAVE]          = settings.saveToGallery
-            prefs[Keys.PROVIDER]      = settings.selectedProvider.name
-            // Video parameters
-            prefs[Keys.VIDEO_WIDTH]      = settings.videoWidth
-            prefs[Keys.VIDEO_HEIGHT]     = settings.videoHeight
-            prefs[Keys.VIDEO_NUM_FRAMES] = settings.videoNumFrames
-            prefs[Keys.VIDEO_FRAME_RATE] = settings.videoFrameRate
+        dataStore.edit { prefs ->
+            prefs[stringPreferencesKey("openai_api_key")] = settings.openAiApiKey
+            prefs[stringPreferencesKey("agnes_api_key")] = settings.agnesApiKey
+            prefs[stringPreferencesKey("agnes_image_model")] = settings.agnesImageModel
+            prefs[stringPreferencesKey("agnes_video_model")] = settings.agnesVideoModel
+            prefs[stringPreferencesKey("default_image_model")] = settings.defaultImageModel
+            prefs[stringPreferencesKey("default_image_width")] = settings.defaultImageWidth.toString()
+            prefs[stringPreferencesKey("default_image_height")] = settings.defaultImageHeight.toString()
+            prefs[stringPreferencesKey("selected_provider")] = settings.selectedProvider
+            prefs[booleanPreferencesKey("save_to_gallery")] = settings.saveToGallery
         }
     }
 }

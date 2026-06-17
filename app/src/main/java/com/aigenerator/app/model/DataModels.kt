@@ -54,25 +54,6 @@ data class ChatRequest(
     val max_tokens: Int = 500
 )
 
-data class StabilityTextToImageBody(
-    val text_prompts: List<StabilityTextPrompt>,
-    val cfg_scale: Float = 7.0f,
-    val width: Int = 1024,
-    val height: Int = 1024,
-    val steps: Int = 30,
-    val samples: Int = 1
-)
-
-data class StabilityTextPrompt(
-    val text: String,
-    val weight: Float = 1.0f
-)
-
-data class ReplicateRequest(
-    val version: String,
-    val input: Map<String, Any>
-)
-
 data class OpenAIImageResponse(
     val created: Long = 0,
     val data: List<ImageData> = emptyList()
@@ -94,36 +75,12 @@ data class Choice(
     val finish_reason: String = ""
 )
 
-data class StabilityImageResponse(
-    val artifacts: List<Artifact> = emptyList()
-)
-
-data class Artifact(
-    val base64: String = "",
-    val seed: Long = 0,
-    val finishReason: String = ""
-)
-
-data class ReplicateResponse(
-    val id: String = "",
-    val status: String = "",
-    val output: Any? = null,
-    val error: String? = null
-)
-
 // ============ AGNES API MODELS ============
 
 data class AgnesImageRequest(
     val model: String = "agnes-image-2.0-flash",
     val prompt: String,
-    val size: String = "1024x1024",
-    val image: List<String>? = null,
-    val return_base64: Boolean? = null,
-)
-
-data class ExtraBody(
-    @SerializedName("response_format")
-    val responseFormat: String? = null
+    val size: String = "1024x1024"
 )
 
 data class AgnesImageResponse(
@@ -173,17 +130,8 @@ data class AppSettings(
     val agnesVideoModel: String = "agnes-video-v2.0",
     // Image settings
     val defaultImageModel: String = "dall-e-3",
-    val defaultVideoModel: String = "stable-video-diffusion",
     val defaultImageWidth: Int = 1024,
     val defaultImageHeight: Int = 1024,
-    val defaultSteps: Int = 30,
-    val defaultCfgScale: Float = 7.0f,
-    val enableNegativePrompt: Boolean = true,
-    val saveToGallery: Boolean = true,
     val selectedProvider: AIProvider = AIProvider.OPENAI,
-    // Video parameters
-    val videoWidth: Int = 1152,
-    val videoHeight: Int = 768,
-    val videoNumFrames: Int = 121,
-    val videoFrameRate: Int = 24
+    val saveToGallery: Boolean = true
 )
