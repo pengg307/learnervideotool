@@ -15,6 +15,7 @@ import com.aigenerator.app.model.MessageType
 import com.aigenerator.app.repository.AIRepository
 import com.aigenerator.app.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
