@@ -247,15 +247,6 @@ class AIRepository @Inject constructor(
                 put("model", modelName)
                 put("prompt", prompt)
                 put("size", size)
-                if (returnBase64) {
-                    put("return_base64", true)
-                }
-                if (responseFormat.isNotBlank()) {
-                    val extraBody = JSONObject().apply {
-                        put("response_format", responseFormat)
-                    }
-                    put("extra_body", extraBody)
-                }
                 inputImage?.let {
                     val imagesArray = org.json.JSONArray()
                     imagesArray.put(it)
