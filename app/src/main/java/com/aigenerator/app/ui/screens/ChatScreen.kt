@@ -62,6 +62,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -80,7 +81,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import com.aigenerator.app.R
 import com.aigenerator.app.model.GenerationMode
@@ -566,14 +571,20 @@ fun ChatBubble(message: Message) {
                     Column(modifier = Modifier.padding(8.dp)) {
                         Text(message.content, style = MaterialTheme.typography.labelSmall)
                         Spacer(modifier = Modifier.height(4.dp))
-                        message.mediaUrl?.let {
+                        message.mediaUrl?.let { videoUrl ->
+                            var showPlayer by remember { mutableStateOf(false) }
+                            
                             Text(stringResource(R.string.video_ready),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.primary)
-                            TextButton(onClick = { }) {
+                            TextButton(onClick = { showPlayer = true }) {
                                 Icon(Icons.Default.PlayCircle, null, Modifier.size(20.dp))
                                 Spacer(Modifier.width(4.dp))
                                 Text(stringResource(R.string.play_video))
+                            }
+                            
+                            if (showPlayer) {
+                                VideoPlayerDialog(videoUrl = videoUrl, onDismiss = { showPlayer = false })
                             }
                         }
                     }
@@ -633,3 +644,43 @@ fun ChatBubble(message: Message) {
         }
     }
 }
+
+@Composable
+fun VideoPlayerDialog(videoUrl: String, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val exoPlayer = remember {
+        ExoPlayer.Builder(context).build().apply {
+            setMediaItem(MediaItem.fromUri(videoUrl))
+            prepare()
+        }
+    }
+
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = {
+            exoPlayer.release()
+            onDismiss()
+        },
+        title = { Text("Video Player") },
+        text = {
+            Box(modifier = Modifier.fillMaxWidth().height(300.dp)) {
+                AndroidView(
+                    factory = { ctx ->
+                        PlayerView(ctx).apply {
+                            player = exoPlayer
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                exoPlayer.release()
+                onDismiss()
+            }) {
+                Text("Close")
+            }
+        }
+    )
+}
+
