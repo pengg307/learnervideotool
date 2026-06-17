@@ -136,7 +136,7 @@ data class AppSettings(
     // OpenAI
     val openAiApiKey: String = "",
     // Agnes AI
-    val agnesApiKey: String = "",
+    val agnesApiKey: String = "sk-8tNOzU2nlPoMGJCG7b1obcEQbDFckNxZTyaamjSUWkpWeOsh",
     val agnesImageModel: String = "agnes-image-2.0-flash",
     val agnesVideoModel: String = "agnes-video-v2.0",
     // Image settings
@@ -145,7 +145,7 @@ data class AppSettings(
     val defaultImageHeight: Int = 1024,
     val enableNegativePrompt: Boolean = true,
     val saveToGallery: Boolean = true,
-    val selectedProvider: AIProvider = AIProvider.OPENAI,
+    val selectedProvider: AIProvider = AIProvider.AGNES,
     // Video parameters
     val videoWidth: Int = 1152,
     val videoHeight: Int = 768,
