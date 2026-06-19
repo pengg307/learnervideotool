@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -167,8 +169,7 @@ fun GalleryScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(selectedItems) { selectedItem ->
-                                val index = selectedItems.indexOfFirst { it.id == selectedItem.id }
+                            itemsIndexed(selectedItems) { index, selectedItem ->
                                 Card(
                                     modifier = Modifier
                                         .size(90.dp)
@@ -248,7 +249,11 @@ fun GalleryScreen(
                                     return@clickable
                                 }
                                 if (item.type != MessageType.AI_VIDEO) {
-                                    Toast.makeText(context, "Only videos can be selected.", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        context,
+                                        "Only videos can be selected.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                     return@clickable
                                 }
                                 selectedItems = if (isSelected) {
@@ -256,7 +261,8 @@ fun GalleryScreen(
                                 } else {
                                     selectedItems + item
                                 }
-                                activeSelectedIndex = selectedItems.indexOfFirst { it.id == item.id }
+                                activeSelectedIndex = selectedItems
+                                    .indexOfFirst { it.id == item.id }
                                     .coerceAtLeast(0)
                             },
                         shape = RoundedCornerShape(12.dp)
@@ -311,13 +317,13 @@ fun GalleryScreen(
             text = {
                 Column {
                     AsyncImage(
-                        model              = item.mediaUrl,
+                        model = item.mediaUrl,
                         contentDescription = null,
-                        modifier           = Modifier
+                        modifier = Modifier
                             .fillMaxWidth()
                             .height(280.dp)
                             .clip(RoundedCornerShape(8.dp)),
-                        contentScale       = ContentScale.Fit
+                        contentScale = ContentScale.Fit
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(item.content, style = MaterialTheme.typography.bodySmall)
@@ -325,8 +331,11 @@ fun GalleryScreen(
             },
             confirmButton = {
                 TextButton(onClick = { vm.delete(item.id); selected = null }) {
-                    Icon(Icons.Default.Delete, null,
-                        tint = MaterialTheme.colorScheme.error)
+                    Icon(
+                        Icons.Default.Delete,
+                        null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
