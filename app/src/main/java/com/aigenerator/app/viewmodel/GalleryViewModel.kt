@@ -32,12 +32,16 @@ class GalleryViewModel @Inject constructor(
     fun combineVideos(selectedItems: List<Message>, onResult: (Boolean, String) -> Unit) {
         viewModelScope.launch {
             when (val result = repo.combineVideosToGallery(selectedItems)) {
-                is AIResult.Success -> {
+                is AIResult.Success<*> -> {        // ← Fix: add <*>
                     load()
                     onResult(true, "Combined video saved to gallery.")
                 }
-                is AIResult.Error -> onResult(false, result.message)
-                else -> onResult(false, "Unknown error while combining videos.")
+                is AIResult.Error<*> -> {          // ← Fix: add <*>
+                    onResult(false, result.message)
+                }
+                is AIResult.Loading<*> -> {        // ← Fix: replace else with Loading<*>
+                    onResult(false, "Still loading...")
+                }
             }
         }
     }
