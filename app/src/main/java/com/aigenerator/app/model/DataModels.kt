@@ -31,7 +31,17 @@ data class Message(
     val isLoading: Boolean = false,
     val generationMode: GenerationMode? = null,
     val sessionId: String = ""
-)
+) {
+    // Helper function to check if message is from user
+    fun isFromUser(): Boolean {
+        return type in listOf(MessageType.USER_TEXT, MessageType.USER_VOICE, MessageType.USER_IMAGE)
+    }
+    
+    // Helper function to check if message is from AI
+    fun isFromAI(): Boolean {
+        return type in listOf(MessageType.AI_TEXT, MessageType.AI_IMAGE, MessageType.AI_VIDEO)
+    }
+}
 
 data class OpenAIImageRequest(
     val prompt: String,
@@ -74,8 +84,6 @@ data class Choice(
     val message: ChatMessage,
     val finish_reason: String = ""
 )
-
-
 
 // ============ AGNES API MODELS ============
 

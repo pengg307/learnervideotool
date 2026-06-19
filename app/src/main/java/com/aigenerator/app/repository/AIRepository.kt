@@ -9,6 +9,7 @@ import com.aigenerator.app.model.AppSettings
 import com.aigenerator.app.model.ChatMessage
 import com.aigenerator.app.model.ChatRequest
 import com.aigenerator.app.model.Message
+import com.aigenerator.app.model.MessageType
 import com.aigenerator.app.model.OpenAIImageRequest
 import com.aigenerator.app.network.OpenAIApiService
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -327,123 +328,123 @@ class AIRepository @Inject constructor(
         bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
         return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
     }
-	
-	// ============ VIDEO COMBINING ============
+    
+    // ============ VIDEO COMBINING ============
 
-	suspend fun combineVideosToGallery(selectedItems: List<Message>): AIResult<String> =
-    withContext(Dispatchers.IO) {
-        try {
-            val settings = settingsRepo.getSettings()
-            val apiKey = settings.agnesApiKey
+    suspend fun combineVideosToGallery(selectedItems: List<Message>): AIResult<String> =
+        withContext(Dispatchers.IO) {
+            try {
+                val settings = settingsRepo.getSettings()
+                val apiKey = settings.agnesApiKey
 
-            if (apiKey.isBlank()) {
-                return@withContext AIResult.Error("Agnes API key not set. Go to Settings.")
-            }
-
-            val videoUrls = selectedItems.mapNotNull { it.mediaUrl }
-            if (videoUrls.size < 2) {
-                return@withContext AIResult.Error("At least 2 videos required to combine.")
-            }
-
-            val endpoint = "https://apihub.agnes-ai.com/v1/videos/combine"
-
-            val jsonBody = JSONObject().apply {
-                val urlsArray = org.json.JSONArray()
-                videoUrls.forEach { urlsArray.put(it) }
-                put("video_urls", urlsArray)
-            }
-
-            val client = OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(120, TimeUnit.SECONDS)
-                .build()
-
-            val requestBody = jsonBody.toString()
-                .toRequestBody("application/json".toMediaType())
-
-            val request = Request.Builder()
-                .url(endpoint)
-                .addHeader("Authorization", "Bearer $apiKey")
-                .addHeader("Content-Type", "application/json")
-                .post(requestBody)
-                .build()
-
-            val response = client.newCall(request).execute()
-            val responseBody = response.body?.string()
-
-            if (response.isSuccessful && responseBody != null) {
-                val jsonResponse = JSONObject(responseBody)
-                val videoId = jsonResponse.optString("video_id", "")
-                    .ifBlank { jsonResponse.optString("task_id", "") }
-                    .ifBlank { jsonResponse.optString("id", "") }
-
-                if (videoId.isBlank()) {
-                    return@withContext AIResult.Error("No video_id returned: $responseBody")
+                if (apiKey.isBlank()) {
+                    return@withContext AIResult.Error("Agnes API key not set. Go to Settings.")
                 }
 
-                // Poll for result
-                val statusUrl = "https://apihub.agnes-ai.com/agnesapi?video_id=$videoId"
-                var attempts = 0
-                val maxAttempts = 120
+                val videoUrls = selectedItems.mapNotNull { it.mediaUrl }
+                if (videoUrls.size < 2) {
+                    return@withContext AIResult.Error("At least 2 videos required to combine.")
+                }
 
-                while (attempts < maxAttempts) {
-                    delay(3000)
+                val endpoint = "https://apihub.agnes-ai.com/v1/videos/combine"
 
-                    val statusRequest = Request.Builder()
-                        .url(statusUrl)
-                        .addHeader("Authorization", "Bearer $apiKey")
-                        .get()
-                        .build()
+                val jsonBody = JSONObject().apply {
+                    val urlsArray = org.json.JSONArray()
+                    videoUrls.forEach { urlsArray.put(it) }
+                    put("video_urls", urlsArray)
+                }
 
-                    val statusResponse = client.newCall(statusRequest).execute()
-                    val statusBody = statusResponse.body?.string()
+                val client = OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(120, TimeUnit.SECONDS)
+                    .build()
 
-                    if (statusResponse.isSuccessful && statusBody != null) {
-                        val statusJson = JSONObject(statusBody)
-                        val status = statusJson.optString("status", "unknown")
+                val requestBody = jsonBody.toString()
+                    .toRequestBody("application/json".toMediaType())
 
-                        when (status) {
-                            "completed", "succeeded", "success" -> {
-                                val videoUrl = statusJson.optString("video_url", "")
-                                    .ifBlank { statusJson.optString("url", "") }
-                                    .ifBlank { statusJson.optString("output", "") }
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .addHeader("Content-Type", "application/json")
+                    .post(requestBody)
+                    .build()
 
-                                if (videoUrl.isNotBlank()) {
-                                    // Save combined video to database
-                                    val combinedMessage = Message(
-                                        id = java.util.UUID.randomUUID().toString(),
-                                        sessionId = "gallery",
-                                        content = "Combined video (${selectedItems.size} clips)",
-                                        mediaUrl = videoUrl,
-                                        type = com.aigenerator.app.model.MessageType.AI_VIDEO,
-                                        timestamp = System.currentTimeMillis(),
-                                        isFromUser = false
-                                    )
-                                    dao.insert(combinedMessage)
-                                    return@withContext AIResult.Success(videoUrl)
-                                } else {
-                                    return@withContext AIResult.Error("No URL in completed response: $statusBody")
+                val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+
+                if (response.isSuccessful && responseBody != null) {
+                    val jsonResponse = JSONObject(responseBody)
+                    val videoId = jsonResponse.optString("video_id", "")
+                        .ifBlank { jsonResponse.optString("task_id", "") }
+                        .ifBlank { jsonResponse.optString("id", "") }
+
+                    if (videoId.isBlank()) {
+                        return@withContext AIResult.Error("No video_id returned: $responseBody")
+                    }
+
+                    // Poll for result
+                    val statusUrl = "https://apihub.agnes-ai.com/agnesapi?video_id=$videoId"
+                    var attempts = 0
+                    val maxAttempts = 120
+
+                    while (attempts < maxAttempts) {
+                        delay(3000)
+
+                        val statusRequest = Request.Builder()
+                            .url(statusUrl)
+                            .addHeader("Authorization", "Bearer $apiKey")
+                            .get()
+                            .build()
+
+                        val statusResponse = client.newCall(statusRequest).execute()
+                        val statusBody = statusResponse.body?.string()
+
+                        if (statusResponse.isSuccessful && statusBody != null) {
+                            val statusJson = JSONObject(statusBody)
+                            val status = statusJson.optString("status", "unknown")
+
+                            when (status) {
+                                "completed", "succeeded", "success" -> {
+                                    val videoUrl = statusJson.optString("video_url", "")
+                                        .ifBlank { statusJson.optString("url", "") }
+                                        .ifBlank { statusJson.optString("output", "") }
+
+                                    if (videoUrl.isNotBlank()) {
+                                        // Save combined video to database
+                                        val combinedMessage = Message(
+                                            id = java.util.UUID.randomUUID().toString(),
+                                            sessionId = "gallery",
+                                            content = "Combined video (${selectedItems.size} clips)",
+                                            mediaUrl = videoUrl,
+                                            type = MessageType.AI_VIDEO,
+                                            timestamp = System.currentTimeMillis()
+                                            // ✅ REMOVED: isFromUser = false
+                                        )
+                                        dao.insert(combinedMessage)
+                                        return@withContext AIResult.Success(videoUrl)
+                                    } else {
+                                        return@withContext AIResult.Error("No URL in completed response: $statusBody")
+                                    }
+                                }
+                                "failed", "error" -> {
+                                    val errorMsg = statusJson.optString("error",
+                                        statusJson.optString("message", "Unknown error"))
+                                    return@withContext AIResult.Error("Combine failed: $errorMsg")
+                                }
+                                "canceled" -> {
+                                    return@withContext AIResult.Error("Video combining was canceled.")
                                 }
                             }
-                            "failed", "error" -> {
-                                val errorMsg = statusJson.optString("error",
-                                    statusJson.optString("message", "Unknown error"))
-                                return@withContext AIResult.Error("Combine failed: $errorMsg")
-                            }
-                            "canceled" -> {
-                                return@withContext AIResult.Error("Video combining was canceled.")
-                            }
                         }
+                        attempts++
                     }
-                    attempts++
+                    AIResult.Error("Combine timed out after ${maxAttempts * 3} seconds.")
+                } else {
+                    AIResult.Error("API error: ${response.code} - ${responseBody ?: "Unknown error"}")
                 }
-                AIResult.Error("Combine timed out after ${maxAttempts * 3} seconds.")
-            } else {
-                AIResult.Error("API error: ${response.code} - ${responseBody ?: "Unknown error"}")
+            } catch (e: Exception) {
+                AIResult.Error("Error combining videos: ${e.message}")
             }
-        } catch (e: Exception) {
-            AIResult.Error("Error combining videos: ${e.message}")
         }
-    }
 }
