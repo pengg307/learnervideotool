@@ -580,29 +580,28 @@ fun ChatBubble(message: Message) {
 								style = MaterialTheme.typography.bodySmall,
 								color = MaterialTheme.colorScheme.primary)
 							
-							// ✅ Row with Play and Save buttons
+							// ✅ Row with Play, Save, and Share buttons
 							Row(
 								modifier = Modifier.fillMaxWidth(),
-								horizontalArrangement = Arrangement.spacedBy(8.dp)
+								horizontalArrangement = Arrangement.spacedBy(4.dp)
 							) {
 								// Play button
 								TextButton(
 									onClick = { showPlayer = true },
 									modifier = Modifier.weight(1f)
 								) {
-									Icon(Icons.Default.PlayCircle, null, Modifier.size(20.dp))
+									Icon(Icons.Default.PlayCircle, null, Modifier.size(16.dp))
 									Spacer(Modifier.width(4.dp))
 									Text(stringResource(R.string.play_video))
 								}
 								
-								// ✅ NEW SAVE button for videos
+								// ✅ SAVE button for videos
 								TextButton(
 									onClick = {
 										if (saveLoading) return@TextButton
 										saveLoading = true
 										scope.launch {
 											try {
-												// Download and save video
 												val connection = java.net.URL(videoUrl).openConnection() as java.net.HttpURLConnection
 												connection.connectTimeout = 15000
 												connection.readTimeout = 30000
@@ -614,7 +613,6 @@ fun ChatBubble(message: Message) {
 												inputStream.close()
 												connection.disconnect()
 												
-												// Save to MediaStore
 												val contentValues = android.content.ContentValues().apply {
 													put(android.provider.MediaStore.Video.Media.DISPLAY_NAME, "generated_video_${System.currentTimeMillis()}.mp4")
 													put(android.provider.MediaStore.Video.Media.MIME_TYPE, "video/mp4")
@@ -653,10 +651,7 @@ fun ChatBubble(message: Message) {
 											}
 										}
 									},
-									modifier = Modifier.weight(1f),
-									colors = TextButtonDefaults.textButtonColors(
-										contentColor = MaterialTheme.colorScheme.secondary
-									)
+									modifier = Modifier.weight(1f)
 								) {
 									if (saveLoading) {
 										CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
