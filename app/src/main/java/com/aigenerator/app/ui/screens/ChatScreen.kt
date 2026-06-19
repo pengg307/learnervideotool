@@ -1,6 +1,7 @@
 package com.aigenerator.app.ui.screens
 
 import android.Manifest
+import android.content.ContentValues
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -11,6 +12,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,6 +48,7 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -62,7 +65,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -95,7 +97,10 @@ import com.aigenerator.app.viewmodel.ChatViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
@@ -404,6 +409,73 @@ fun WelcomeCard(mode: GenerationMode) {
     }
 }
 
+// ============ HELPER FUNCTION TO SAVE VIDEO ============
+
+suspend fun saveVideoToStorage(context: android.content.Context, videoUrl: String): Boolean {
+    return withContext(Dispatchers.IO) {
+        try {
+            val contentResolver = context.contentResolver
+            var inputStream = when {
+                // Handle content:// URIs
+                videoUrl.startsWith("content://") -> {
+                    val uri = Uri.parse(videoUrl)
+                    contentResolver.openInputStream(uri)
+                }
+                // Handle file:// URIs
+                videoUrl.startsWith("file://") -> {
+                    val file = File(videoUrl.replace("file://", ""))
+                    if (file.exists()) file.inputStream() else null
+                }
+                // Handle http:// or https:// URLs
+                videoUrl.startsWith("http://") || videoUrl.startsWith("https://") -> {
+                    val connection = java.net.URL(videoUrl).openConnection() as java.net.HttpURLConnection
+                    connection.connectTimeout = 15000
+                    connection.readTimeout = 30000
+                    connection.requestMethod = "GET"
+                    connection.connect()
+                    connection.inputStream
+                }
+                // Handle local file path
+                else -> {
+                    val file = File(videoUrl)
+                    if (file.exists()) {
+                        file.inputStream()
+                    } else {
+                        null
+                    }
+                }
+            }
+
+            inputStream?.use { stream ->
+                val bytes = stream.readBytes()
+                
+                // Save to MediaStore
+                val contentValues = ContentValues().apply {
+                    put(android.provider.MediaStore.Video.Media.DISPLAY_NAME, "generated_video_${System.currentTimeMillis()}.mp4")
+                    put(android.provider.MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                    put(android.provider.MediaStore.Video.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_MOVIES + "/AI_Generator")
+                }
+                
+                val uri = contentResolver.insert(
+                    android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
+                    contentValues
+                )
+                
+                if (uri != null) {
+                    contentResolver.openOutputStream(uri)?.use { outputStream ->
+                        outputStream.write(bytes)
+                    }
+                    return@withContext true
+                }
+            }
+            false
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+}
+
 @Composable
 fun ChatBubble(message: Message) {
     val isUser = message.type in listOf(
@@ -566,125 +638,121 @@ fun ChatBubble(message: Message) {
                     }
                 }
 
+            // ============ FIXED: AI_VIDEO WITH SAVE BUTTON ============
             MessageType.AI_VIDEO ->
-				Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
-					Column(modifier = Modifier.padding(8.dp)) {
-						Text(message.content, style = MaterialTheme.typography.labelSmall)
-						Spacer(modifier = Modifier.height(4.dp))
-						message.mediaUrl?.let { videoUrl ->
-							var showPlayer by remember { mutableStateOf(false) }
-							var saveLoading by remember { mutableStateOf(false) }
-							val scope = rememberCoroutineScope()
-							
-							Text(stringResource(R.string.video_ready),
-								style = MaterialTheme.typography.bodySmall,
-								color = MaterialTheme.colorScheme.primary)
-							
-							// ✅ Row with Play, Save, and Share buttons
-							Row(
-								modifier = Modifier.fillMaxWidth(),
-								horizontalArrangement = Arrangement.spacedBy(4.dp)
-							) {
-								// Play button
-								TextButton(
-									onClick = { showPlayer = true },
-									modifier = Modifier.weight(1f)
-								) {
-									Icon(Icons.Default.PlayCircle, null, Modifier.size(16.dp))
-									Spacer(Modifier.width(4.dp))
-									Text(stringResource(R.string.play_video))
-								}
-								
-								// ✅ SAVE button for videos
-								TextButton(
-									onClick = {
-										if (saveLoading) return@TextButton
-										saveLoading = true
-										scope.launch {
-											try {
-												val connection = java.net.URL(videoUrl).openConnection() as java.net.HttpURLConnection
-												connection.connectTimeout = 15000
-												connection.readTimeout = 30000
-												connection.requestMethod = "GET"
-												connection.connect()
-												
-												val inputStream = connection.inputStream
-												val bytes = inputStream.readBytes()
-												inputStream.close()
-												connection.disconnect()
-												
-												val contentValues = android.content.ContentValues().apply {
-													put(android.provider.MediaStore.Video.Media.DISPLAY_NAME, "generated_video_${System.currentTimeMillis()}.mp4")
-													put(android.provider.MediaStore.Video.Media.MIME_TYPE, "video/mp4")
-													put(android.provider.MediaStore.Video.Media.RELATIVE_PATH, android.os.Environment.DIRECTORY_MOVIES + "/AI_Generator")
-												}
-												
-												val uri = context.contentResolver.insert(
-													android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
-													contentValues
-												)
-												
-												if (uri != null) {
-													context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-														outputStream.write(bytes)
-													}
-													Toast.makeText(
-														context,
-														"Video saved to gallery!",
-														Toast.LENGTH_SHORT
-													).show()
-												} else {
-													Toast.makeText(
-														context,
-														"Failed to save video",
-														Toast.LENGTH_SHORT
-													).show()
-												}
-											} catch (e: Exception) {
-												Toast.makeText(
-													context,
-													"Failed to save: ${e.message}",
-													Toast.LENGTH_SHORT
-												).show()
-											} finally {
-												saveLoading = false
-											}
-										}
-									},
-									modifier = Modifier.weight(1f)
-								) {
-									if (saveLoading) {
-										CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-									} else {
-										Icon(Icons.Default.Download, null, Modifier.size(16.dp))
-									}
-									Spacer(Modifier.width(4.dp))
-									Text(if (saveLoading) "Saving..." else "Save")
-								}
-								
-								// Share button for video
-								TextButton(
-									onClick = {
-										val shareIntent = Intent(Intent.ACTION_SEND).apply {
-											type = "text/plain"
-											putExtra(Intent.EXTRA_TEXT, videoUrl)
-										}
-										context.startActivity(Intent.createChooser(shareIntent, "Share video"))
-									},
-									modifier = Modifier.weight(1f)
-								) {
-									Icon(Icons.Default.Share, null, Modifier.size(16.dp))
-									Spacer(Modifier.width(4.dp))
-									Text("Share")
-								}
-							}
-							
-							if (showPlayer) {
-								VideoPlayerDialog(videoUrl = videoUrl, onDismiss = { showPlayer = false })
-							}
-						}
-					}
-				}
+                Card(shape = RoundedCornerShape(4.dp, 18.dp, 18.dp, 18.dp)) {
+                    Column(modifier = Modifier.padding(8.dp)) {
+                        Text(message.content, style = MaterialTheme.typography.labelSmall)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        message.mediaUrl?.let { videoUrl ->
+                            var showPlayer by remember { mutableStateOf(false) }
+                            var saveLoading by remember { mutableStateOf(false) }
+                            val scope = rememberCoroutineScope()
+                            
+                            // Video thumbnail with play overlay
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(max = 200.dp)
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .clickable { showPlayer = true }
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Column(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.PlayCircle,
+                                        contentDescription = "Play Video",
+                                        modifier = Modifier.size(48.dp),
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        "Tap to play video",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            // Row with Play, Save, Share buttons
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                // Play button
+                                TextButton(
+                                    onClick = { showPlayer = true },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.PlayCircle, null, Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Play")
+                                }
+                                
+                                // ✅ SAVE button for videos
+                                TextButton(
+                                    onClick = {
+                                        if (saveLoading) return@TextButton
+                                        saveLoading = true
+                                        scope.launch {
+                                            try {
+                                                val result = saveVideoToStorage(context, videoUrl)
+                                                Toast.makeText(
+                                                    context,
+                                                    if (result) "Video saved to gallery!" else "Failed to save video",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } catch (e: Exception) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Failed to save: ${e.message}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            } finally {
+                                                saveLoading = false
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    if (saveLoading) {
+                                        CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    } else {
+                                        Icon(Icons.Default.Download, null, Modifier.size(16.dp))
+                                    }
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(if (saveLoading) "Saving..." else "Save")
+                                }
+                                
+                                // Share button
+                                TextButton(
+                                    onClick = {
+                                        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                                            type = "text/plain"
+                                            putExtra(Intent.EXTRA_TEXT, videoUrl)
+                                        }
+                                        context.startActivity(Intent.createChooser(shareIntent, "Share video"))
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(Icons.Default.Share, null, Modifier.size(16.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Share")
+                                }
+                            }
+                            
+                            if (showPlayer) {
+                                VideoPlayerDialog(videoUrl = videoUrl, onDismiss = { showPlayer = false })
+                            }
+                        }
+                    }
+                }
 
             MessageType.LOADING ->
                 Card(
@@ -751,7 +819,7 @@ fun VideoPlayerDialog(videoUrl: String, onDismiss: () -> Unit) {
         }
     }
 
-    androidx.compose.material3.AlertDialog(
+    AlertDialog(
         onDismissRequest = {
             exoPlayer.release()
             onDismiss()
@@ -779,4 +847,3 @@ fun VideoPlayerDialog(videoUrl: String, onDismiss: () -> Unit) {
         }
     )
 }
-
