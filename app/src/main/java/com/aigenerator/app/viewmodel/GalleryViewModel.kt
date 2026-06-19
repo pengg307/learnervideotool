@@ -3,7 +3,9 @@ package com.aigenerator.app.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aigenerator.app.model.Message
+import com.aigenerator.app.model.MessageType
 import com.aigenerator.app.repository.AIRepository
+import com.aigenerator.app.repository.AIResult  // ✅ Add this import
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -54,15 +56,16 @@ class GalleryViewModel @Inject constructor(
             try {
                 val result = repository.combineVideosToGallery(selectedItems)
                 when (result) {
-                    is AIRepository.AIResult.Success -> {
+                    is AIResult.Success -> {
                         callback(true, "Videos combined successfully!")
                         load()
                     }
-                    is AIRepository.AIResult.Error -> {
+                    is AIResult.Error -> {
                         callback(false, result.message)
                     }
-                    is AIRepository.AIResult.Loading -> {
+                    is AIResult.Loading -> {
                         // Handle loading state if needed
+                        callback(false, "Processing...")
                     }
                 }
             } catch (e: Exception) {
@@ -89,10 +92,9 @@ class GalleryViewModel @Inject constructor(
 
                 // Use repository to save based on type
                 val result = when (message.type) {
-                    com.aigenerator.app.model.MessageType.AI_IMAGE -> {
-                        // Try to download and save image
+                    MessageType.AI_IMAGE -> {
                         try {
-                            // We need to re-download and save
+                            // Try to download and save image
                             val savedPath = repository.downloadAndSaveImage(mediaUrl, message.content)
                             if (savedPath != null) {
                                 // Update the message with local path
@@ -101,15 +103,15 @@ class GalleryViewModel @Inject constructor(
                                     isSaved = true
                                 )
                                 repository.saveMessage(updatedMessage)
-                                AIRepository.AIResult.Success(savedPath)
+                                AIResult.Success(savedPath)
                             } else {
-                                AIRepository.AIResult.Error("Failed to save image")
+                                AIResult.Error("Failed to save image")
                             }
                         } catch (e: Exception) {
-                            AIRepository.AIResult.Error("Error: ${e.message}")
+                            AIResult.Error("Error: ${e.message}")
                         }
                     }
-                    com.aigenerator.app.model.MessageType.AI_VIDEO -> {
+                    MessageType.AI_VIDEO -> {
                         try {
                             val savedPath = repository.downloadAndSaveVideo(mediaUrl, message.content)
                             if (savedPath != null) {
@@ -118,29 +120,29 @@ class GalleryViewModel @Inject constructor(
                                     isSaved = true
                                 )
                                 repository.saveMessage(updatedMessage)
-                                AIRepository.AIResult.Success(savedPath)
+                                AIResult.Success(savedPath)
                             } else {
-                                AIRepository.AIResult.Error("Failed to save video")
+                                AIResult.Error("Failed to save video")
                             }
                         } catch (e: Exception) {
-                            AIRepository.AIResult.Error("Error: ${e.message}")
+                            AIResult.Error("Error: ${e.message}")
                         }
                     }
                     else -> {
-                        AIRepository.AIResult.Error("Unsupported media type")
+                        AIResult.Error("Unsupported media type")
                     }
                 }
 
                 when (result) {
-                    is AIRepository.AIResult.Success -> {
+                    is AIResult.Success -> {
                         callback(true, "Saved successfully!")
                         load()
                     }
-                    is AIRepository.AIResult.Error -> {
+                    is AIResult.Error -> {
                         callback(false, result.message)
                     }
-                    else -> {
-                        callback(false, "Unknown error")
+                    is AIResult.Loading -> {
+                        callback(false, "Loading...")
                     }
                 }
             } catch (e: Exception) {
