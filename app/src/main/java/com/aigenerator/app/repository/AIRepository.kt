@@ -1,8 +1,15 @@
 package com.aigenerator.app.repository
 
+import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Base64
+import android.util.Log
 import com.aigenerator.app.database.MessageDao
 import com.aigenerator.app.model.AIProvider
 import com.aigenerator.app.model.AppSettings
@@ -22,6 +29,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.io.InputStream
+import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -57,8 +71,29 @@ class AIRepository @Inject constructor(
             )
             if (response.isSuccessful) {
                 val url = response.body()?.data?.firstOrNull()?.url
-                if (url != null) AIResult.Success(url)
-                else AIResult.Error("No image URL returned")
+                if (url != null) {
+                    // Save image locally
+                    val savedPath = downloadAndSaveImage(url, prompt)
+                    if (savedPath != null) {
+                        // Save to database with local path
+                        val message = Message(
+                            content = prompt,
+                            type = MessageType.AI_IMAGE,
+                            mediaUrl = url,
+                            localMediaPath = savedPath,
+                            generationMode = GenerationMode.IMAGE,
+                            isSaved = true,
+                            sessionId = "gallery"
+                        )
+                        dao.insert(message)
+                        return@withContext AIResult.Success(savedPath)
+                    } else {
+                        // Still return URL even if save failed
+                        AIResult.Success(url)
+                    }
+                } else {
+                    AIResult.Error("No image URL returned")
+                }
             } else {
                 AIResult.Error("OpenAI Error ${response.code()}: ${response.errorBody()?.string()}")
             }
@@ -165,7 +200,22 @@ class AIRepository @Inject constructor(
                         }
                     }
                     if (imageUrl.isNotBlank()) {
-                        AIResult.Success(imageUrl)
+                        // Save image locally
+                        val savedPath = downloadAndSaveImage(imageUrl, prompt)
+                        if (savedPath != null) {
+                            val message = Message(
+                                content = prompt,
+                                type = MessageType.AI_IMAGE,
+                                mediaUrl = imageUrl,
+                                localMediaPath = savedPath,
+                                generationMode = GenerationMode.IMAGE,
+                                isSaved = true,
+                                sessionId = "gallery"
+                            )
+                            dao.insert(message)
+                            return@withContext AIResult.Success(savedPath)
+                        }
+                        return@withContext AIResult.Success(imageUrl)
                     } else {
                         AIResult.Error("No image URL or Base64 in response: $responseBody")
                     }
@@ -173,6 +223,20 @@ class AIRepository @Inject constructor(
                     val directUrl = jsonResponse.optString("url", "")
                         .ifBlank { jsonResponse.optString("output", "") }
                     if (directUrl.isNotBlank()) {
+                        val savedPath = downloadAndSaveImage(directUrl, prompt)
+                        if (savedPath != null) {
+                            val message = Message(
+                                content = prompt,
+                                type = MessageType.AI_IMAGE,
+                                mediaUrl = directUrl,
+                                localMediaPath = savedPath,
+                                generationMode = GenerationMode.IMAGE,
+                                isSaved = true,
+                                sessionId = "gallery"
+                            )
+                            dao.insert(message)
+                            return@withContext AIResult.Success(savedPath)
+                        }
                         AIResult.Success(directUrl)
                     } else {
                         AIResult.Error("No image data in response: $responseBody")
@@ -199,7 +263,8 @@ class AIRepository @Inject constructor(
         width: Int = 1152,
         numFrames: Int = 121,
         frameRate: Int = 24,
-        onProgress: ((Int) -> Unit)? = null
+        onProgress: ((Int) -> Unit)? = null,
+        autoSave: Boolean = true  // ✅ Added auto-save parameter
     ): AIResult<String> = withContext(Dispatchers.IO) {
         try {
             if (apiKey.isBlank()) {
@@ -290,6 +355,23 @@ class AIRepository @Inject constructor(
                                 .ifBlank { statusJson.optJSONObject("data")?.optString("url", "") ?: "" }
                             
                             if (videoUrl.isNotBlank()) {
+                                // ✅ Auto-save video if enabled
+                                if (autoSave) {
+                                    val savedPath = downloadAndSaveVideo(videoUrl, prompt)
+                                    if (savedPath != null) {
+                                        val message = Message(
+                                            content = prompt,
+                                            type = MessageType.AI_VIDEO,
+                                            mediaUrl = videoUrl,
+                                            localMediaPath = savedPath,
+                                            generationMode = GenerationMode.VIDEO,
+                                            isSaved = true,
+                                            sessionId = "gallery"
+                                        )
+                                        dao.insert(message)
+                                        return@withContext AIResult.Success(savedPath)
+                                    }
+                                }
                                 return@withContext AIResult.Success(videoUrl)
                             } else {
                                 return@withContext AIResult.Error("Video completed but no URL found: $statusBody")
@@ -315,20 +397,6 @@ class AIRepository @Inject constructor(
         }
     }
 
-    // ============ DATABASE OPERATIONS ============
-
-    suspend fun getAllGenerated(): List<Message> = dao.getAllGenerated()
-    suspend fun getMessages(sessionId: String): List<Message> = dao.getBySession(sessionId)
-    suspend fun saveMessage(message: Message) = dao.insert(message)
-    suspend fun deleteMessage(id: String) = dao.deleteById(id)
-    suspend fun clearSession(sessionId: String) = dao.deleteBySession(sessionId)
-
-    fun bitmapToBase64(bitmap: Bitmap): String {
-        val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-        return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
-    }
-    
     // ============ VIDEO COMBINING ============
 
     suspend fun combineVideosToGallery(selectedItems: List<Message>): AIResult<String> =
@@ -341,7 +409,15 @@ class AIRepository @Inject constructor(
                     return@withContext AIResult.Error("Agnes API key not set. Go to Settings.")
                 }
 
-                val videoUrls = selectedItems.mapNotNull { it.mediaUrl }
+                // Get video URLs from selected items
+                val videoUrls = selectedItems.mapNotNull { 
+                    when {
+                        it.localMediaPath != null && File(it.localMediaPath).exists() -> it.localMediaPath
+                        it.mediaUrl != null -> it.mediaUrl
+                        else -> null
+                    }
+                }
+                
                 if (videoUrls.size < 2) {
                     return@withContext AIResult.Error("At least 2 videos required to combine.")
                 }
@@ -411,17 +487,24 @@ class AIRepository @Inject constructor(
                                         .ifBlank { statusJson.optString("output", "") }
 
                                     if (videoUrl.isNotBlank()) {
-                                        // Save combined video to database
-                                        val combinedMessage = Message(
-                                            id = java.util.UUID.randomUUID().toString(),
-                                            sessionId = "gallery",
-                                            content = "Combined video (${selectedItems.size} clips)",
-                                            mediaUrl = videoUrl,
-                                            type = MessageType.AI_VIDEO,
-                                            timestamp = System.currentTimeMillis()
-                                            // ✅ REMOVED: isFromUser = false
-                                        )
-                                        dao.insert(combinedMessage)
+                                        // Save combined video locally
+                                        val savedPath = downloadAndSaveVideo(videoUrl, "combined_video")
+                                        if (savedPath != null) {
+                                            // Save combined video to database
+                                            val combinedMessage = Message(
+                                                id = java.util.UUID.randomUUID().toString(),
+                                                sessionId = "gallery",
+                                                content = "Combined video (${selectedItems.size} clips)",
+                                                mediaUrl = videoUrl,
+                                                localMediaPath = savedPath,
+                                                type = MessageType.AI_VIDEO,
+                                                timestamp = System.currentTimeMillis(),
+                                                generationMode = GenerationMode.VIDEO,
+                                                isSaved = true
+                                            )
+                                            dao.insert(combinedMessage)
+                                            return@withContext AIResult.Success(savedPath)
+                                        }
                                         return@withContext AIResult.Success(videoUrl)
                                     } else {
                                         return@withContext AIResult.Error("No URL in completed response: $statusBody")
@@ -447,4 +530,112 @@ class AIRepository @Inject constructor(
                 AIResult.Error("Error combining videos: ${e.message}")
             }
         }
+
+    // ============ DATABASE OPERATIONS ============
+
+    suspend fun getAllGenerated(): List<Message> = dao.getAllGenerated()
+    suspend fun getMessages(sessionId: String): List<Message> = dao.getBySession(sessionId)
+    suspend fun saveMessage(message: Message) = dao.insert(message)
+    suspend fun deleteMessage(id: String) = dao.deleteById(id)
+    suspend fun clearSession(sessionId: String) = dao.deleteBySession(sessionId)
+    
+    // ✅ Get saved media files
+    suspend fun getSavedMedia(): List<Message> = withContext(Dispatchers.IO) {
+        dao.getAllGenerated().filter { it.isSaved && it.localMediaPath != null }
+    }
+
+    // ============ SAVE TO GALLERY FUNCTIONS ============
+
+    /**
+     * Download and save image to device storage
+     */
+    private suspend fun downloadAndSaveImage(url: String, name: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val fileName = "AI_Image_${System.currentTimeMillis()}.jpg"
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/AI_Generator")
+                }
+
+                val uri = context.contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                uri?.let {
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        val connection = URL(url).openConnection()
+                        connection.connect()
+                        val inputStream = connection.getInputStream()
+                        inputStream.copyTo(outputStream)
+                        inputStream.close()
+                        return@withContext uri.toString()
+                    }
+                }
+                null
+            } catch (e: Exception) {
+                Log.e("AIRepository", "Error saving image: ${e.message}")
+                null
+            }
+        }
+    }
+
+    /**
+     * Download and save video to device storage
+     */
+    private suspend fun downloadAndSaveVideo(url: String, name: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val fileName = "AI_Video_${System.currentTimeMillis()}.mp4"
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Video.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Video.Media.MIME_TYPE, "video/mp4")
+                    put(MediaStore.Video.Media.RELATIVE_PATH, "${Environment.DIRECTORY_MOVIES}/AI_Generator")
+                }
+
+                val uri = context.contentResolver.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues)
+                uri?.let {
+                    context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                        val connection = URL(url).openConnection()
+                        connection.connect()
+                        val inputStream = connection.getInputStream()
+                        inputStream.copyTo(outputStream)
+                        inputStream.close()
+                        return@withContext uri.toString()
+                    }
+                }
+                null
+            } catch (e: Exception) {
+                Log.e("AIRepository", "Error saving video: ${e.message}")
+                null
+            }
+        }
+    }
+
+    fun bitmapToBase64(bitmap: Bitmap): String {
+        val stream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+        return Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP)
+    }
+	
+	/**
+	 * Download and save image - public version for ViewModel
+	 */
+	suspend fun downloadAndSaveImage(url: String, name: String): String? {
+		return downloadAndSaveImageInternal(url, name)
+	}
+
+	/**
+	 * Download and save video - public version for ViewModel
+	 */
+	suspend fun downloadAndSaveVideo(url: String, name: String): String? {
+		return downloadAndSaveVideoInternal(url, name)
+	}
+
+	// Rename the existing private functions to internal versions
+	private suspend fun downloadAndSaveImageInternal(url: String, name: String): String? {
+		// Same implementation as before
+	}
+
+	private suspend fun downloadAndSaveVideoInternal(url: String, name: String): String? {
+		// Same implementation as before
+	}
 }

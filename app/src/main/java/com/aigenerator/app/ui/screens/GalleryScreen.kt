@@ -26,16 +26,21 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -67,12 +72,14 @@ fun GalleryScreen(
     vm: GalleryViewModel = hiltViewModel()
 ) {
     val items by vm.items.collectAsState()
+    val isLoading by vm.isLoading.collectAsState()
     val context = LocalContext.current
     var selected by remember { mutableStateOf<Message?>(null) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedItems by remember { mutableStateOf<List<Message>>(emptyList()) }
     var activeSelectedIndex by remember { mutableStateOf(0) }
     var combineLoading by remember { mutableStateOf(false) }
+    var savingItemId by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -93,29 +100,49 @@ fun GalleryScreen(
                     }) {
                         Icon(Icons.Default.Close, contentDescription = "Cancel selection")
                     }
-                    IconButton(onClick = {
-                        if (selectedItems.size < 2 || combineLoading) return@IconButton
-                        combineLoading = true
-                        vm.combineVideos(selectedItems) { success, message ->
-                            combineLoading = false
-                            if (!success) {
-                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                            } else {
-                                selectionMode = false
-                                selectedItems = emptyList()
-                                activeSelectedIndex = 0
+                    // ✅ Combine button - only enabled when 2+ videos selected
+                    IconButton(
+                        onClick = {
+                            if (selectedItems.size < 2 || combineLoading) return@IconButton
+                            combineLoading = true
+                            vm.combineVideos(selectedItems) { success, message ->
+                                combineLoading = false
+                                if (!success) {
+                                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Videos combined successfully!", Toast.LENGTH_SHORT).show()
+                                    selectionMode = false
+                                    selectedItems = emptyList()
+                                    activeSelectedIndex = 0
+                                    vm.load()
+                                }
                             }
-                        }
-                    }) {
+                        },
+                        enabled = selectedItems.size >= 2 && !combineLoading
+                    ) {
                         if (combineLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         } else {
-                            Icon(Icons.Default.Check, contentDescription = "Combine selected videos")
+                            Icon(
+                                Icons.Default.Check, 
+                                contentDescription = "Combine selected videos",
+                                tint = if (selectedItems.size >= 2) 
+                                    MaterialTheme.colorScheme.primary 
+                                else 
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
+                    }
+                    if (selectedItems.size >= 2) {
+                        Text(
+                            "${selectedItems.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
                     }
                 } else {
                     IconButton(onClick = { vm.load() }) {
@@ -132,7 +159,11 @@ fun GalleryScreen(
             }
         )
 
-        if (items.isEmpty()) {
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (items.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
@@ -180,7 +211,7 @@ fun GalleryScreen(
                                 ) {
                                     Box(modifier = Modifier.fillMaxSize()) {
                                         AsyncImage(
-                                            model = selectedItem.mediaUrl,
+                                            model = selectedItem.localMediaPath ?: selectedItem.mediaUrl,
                                             contentDescription = null,
                                             modifier = Modifier.fillMaxSize(),
                                             contentScale = ContentScale.Crop
@@ -197,35 +228,61 @@ fun GalleryScreen(
                                                 style = MaterialTheme.typography.bodySmall
                                             )
                                         }
+                                        if (activeSelectedIndex == index) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .fillMaxSize()
+                                                    .background(Color.Green.copy(alpha = 0.3f))
+                                            )
+                                        }
                                     }
                                 }
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            TextButton(onClick = {
-                                if (activeSelectedIndex > 0) {
-                                    val mutable = selectedItems.toMutableList()
-                                    val temp = mutable[activeSelectedIndex - 1]
-                                    mutable[activeSelectedIndex - 1] = mutable[activeSelectedIndex]
-                                    mutable[activeSelectedIndex] = temp
-                                    selectedItems = mutable.toList()
-                                    activeSelectedIndex = activeSelectedIndex - 1
-                                }
-                            }) {
+                            TextButton(
+                                onClick = {
+                                    if (activeSelectedIndex > 0) {
+                                        val mutable = selectedItems.toMutableList()
+                                        val temp = mutable[activeSelectedIndex - 1]
+                                        mutable[activeSelectedIndex - 1] = mutable[activeSelectedIndex]
+                                        mutable[activeSelectedIndex] = temp
+                                        selectedItems = mutable.toList()
+                                        activeSelectedIndex = activeSelectedIndex - 1
+                                    }
+                                },
+                                enabled = activeSelectedIndex > 0
+                            ) {
                                 Text("Move up")
                             }
-                            TextButton(onClick = {
-                                if (activeSelectedIndex < selectedItems.lastIndex) {
-                                    val mutable = selectedItems.toMutableList()
-                                    val temp = mutable[activeSelectedIndex + 1]
-                                    mutable[activeSelectedIndex + 1] = mutable[activeSelectedIndex]
-                                    mutable[activeSelectedIndex] = temp
-                                    selectedItems = mutable.toList()
-                                    activeSelectedIndex = activeSelectedIndex + 1
-                                }
-                            }) {
+                            TextButton(
+                                onClick = {
+                                    if (activeSelectedIndex < selectedItems.lastIndex) {
+                                        val mutable = selectedItems.toMutableList()
+                                        val temp = mutable[activeSelectedIndex + 1]
+                                        mutable[activeSelectedIndex + 1] = mutable[activeSelectedIndex]
+                                        mutable[activeSelectedIndex] = temp
+                                        selectedItems = mutable.toList()
+                                        activeSelectedIndex = activeSelectedIndex + 1
+                                    }
+                                },
+                                enabled = activeSelectedIndex < selectedItems.lastIndex
+                            ) {
                                 Text("Move down")
+                            }
+                            TextButton(
+                                onClick = {
+                                    selectedItems = selectedItems.filterIndexed { index, _ -> 
+                                        index != activeSelectedIndex 
+                                    }
+                                    if (activeSelectedIndex >= selectedItems.size) {
+                                        activeSelectedIndex = (selectedItems.size - 1).coerceAtLeast(0)
+                                    }
+                                },
+                                enabled = selectedItems.isNotEmpty()
+                            ) {
+                                Text("Remove", color = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -240,6 +297,8 @@ fun GalleryScreen(
             ) {
                 items(items) { item ->
                     val isSelected = selectedItems.any { it.id == item.id }
+                    val isSaving = savingItemId == item.id
+                    
                     Card(
                         modifier = Modifier
                             .aspectRatio(1f)
@@ -251,7 +310,7 @@ fun GalleryScreen(
                                 if (item.type != MessageType.AI_VIDEO) {
                                     Toast.makeText(
                                         context,
-                                        "Only videos can be selected.",
+                                        "Only videos can be selected for combining.",
                                         Toast.LENGTH_SHORT
                                     ).show()
                                     return@clickable
@@ -268,12 +327,16 @@ fun GalleryScreen(
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Box(modifier = Modifier.fillMaxSize()) {
+                            // ✅ Use localMediaPath first, fallback to mediaUrl
+                            val displayUrl = item.localMediaPath ?: item.mediaUrl
                             AsyncImage(
-                                model = item.mediaUrl,
-                                contentDescription = null,
+                                model = displayUrl,
+                                contentDescription = item.content,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Crop
                             )
+                            
+                            // Video indicator
                             if (item.type == MessageType.AI_VIDEO) {
                                 Icon(
                                     imageVector = Icons.Default.PlayCircle,
@@ -284,6 +347,77 @@ fun GalleryScreen(
                                     tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
                                 )
                             }
+                            
+                            // ✅ Save button - only for AI-generated media that isn't saved yet
+                            if (!item.isSaved && 
+                                (item.type == MessageType.AI_IMAGE || item.type == MessageType.AI_VIDEO) &&
+                                !selectionMode) {
+                                IconButton(
+                                    onClick = {
+                                        savingItemId = item.id
+                                        vm.saveMediaToGallery(item) { success, message ->
+                                            savingItemId = null
+                                            if (success) {
+                                                Toast.makeText(context, "Saved to gallery!", Toast.LENGTH_SHORT).show()
+                                                vm.load()
+                                            } else {
+                                                Toast.makeText(context, "Error: $message", Toast.LENGTH_SHORT).show()
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .background(
+                                            Color.Black.copy(alpha = 0.5f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                ) {
+                                    if (isSaving) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            strokeWidth = 2.dp,
+                                            color = Color.White
+                                        )
+                                    } else {
+                                        Icon(
+                                            Icons.Default.Save,
+                                            contentDescription = "Save to gallery",
+                                            tint = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // ✅ "Saved" badge
+                            if (item.isSaved) {
+                                Surface(
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(8.dp),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(4.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Download,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = Color.White
+                                        )
+                                        Text(
+                                            "Saved",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Color.White
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Selection overlay for combine mode
                             if (isSelected) {
                                 Box(
                                     modifier = Modifier
@@ -294,7 +428,31 @@ fun GalleryScreen(
                                         text = "${selectedItems.indexOfFirst { it.id == item.id } + 1}",
                                         modifier = Modifier.align(Alignment.Center),
                                         color = Color.White,
-                                        style = MaterialTheme.typography.titleLarge
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                            
+                            // Delete button
+                            if (!selectionMode) {
+                                IconButton(
+                                    onClick = { 
+                                        vm.delete(item.id)
+                                        vm.load()
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(8.dp)
+                                        .background(
+                                            Color.Black.copy(alpha = 0.5f),
+                                            RoundedCornerShape(8.dp)
+                                        )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = Color.White
                                     )
                                 }
                             }
@@ -305,6 +463,7 @@ fun GalleryScreen(
         }
     }
 
+    // Detail dialog
     selected?.let { item ->
         AlertDialog(
             onDismissRequest = { selected = null },
@@ -317,7 +476,7 @@ fun GalleryScreen(
             text = {
                 Column {
                     AsyncImage(
-                        model = item.mediaUrl,
+                        model = item.localMediaPath ?: item.mediaUrl,
                         contentDescription = null,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -327,16 +486,51 @@ fun GalleryScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(item.content, style = MaterialTheme.typography.bodySmall)
+                    if (item.isSaved) {
+                        Text(
+                            "✓ Saved to gallery",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { vm.delete(item.id); selected = null }) {
-                    Icon(
-                        Icons.Default.Delete,
-                        null,
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                Row {
+                    // ✅ Save button in dialog
+                    if (!item.isSaved && 
+                        (item.type == MessageType.AI_IMAGE || item.type == MessageType.AI_VIDEO)) {
+                        TextButton(
+                            onClick = {
+                                vm.saveMediaToGallery(item) { success, message ->
+                                    if (success) {
+                                        Toast.makeText(context, "Saved to gallery!", Toast.LENGTH_SHORT).show()
+                                        vm.load()
+                                        selected = null
+                                    } else {
+                                        Toast.makeText(context, "Error: $message", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(Icons.Default.Save, null)
+                            Text("Save")
+                        }
+                    }
+                    TextButton(
+                        onClick = { 
+                            vm.delete(item.id)
+                            vm.load()
+                            selected = null 
+                        }
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
                 }
             },
             dismissButton = {

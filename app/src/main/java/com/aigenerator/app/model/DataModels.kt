@@ -30,7 +30,8 @@ data class Message(
     val timestamp: Long = System.currentTimeMillis(),
     val isLoading: Boolean = false,
     val generationMode: GenerationMode? = null,
-    val sessionId: String = ""
+    val sessionId: String = "",
+    val isSaved: Boolean = false  // ✅ Added to track if media is saved locally
 ) {
     // Helper function to check if message is from user
     fun isFromUser(): Boolean {
@@ -160,3 +161,7 @@ data class AppSettings(
     val videoNumFrames: Int = 121,
     val videoFrameRate: Int = 24
 )
+
+
+
+
